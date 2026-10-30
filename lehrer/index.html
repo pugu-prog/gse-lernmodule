@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aufgaben erstellen · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Aufgaben erstellen</h1>
+      <p class="sub">Aufgabenblätter mit Lösungen und LaTeX-Export für die LTEtt-Vorlage. Dieser Bereich ist verschlüsselt und nur mit dem Passwort der Lehrkraft lesbar.</p>
+    </div>
+  </header>
+  <section id="gate">
+    <form id="pwform" class="lock">
+      <label class="fl" style="flex:1;min-width:220px">Passwort<input type="password" id="pw" autocomplete="current-password" required></label>
+      <button class="primary" type="submit" id="go">Öffnen</button>
+    </form>
+    <p class="info" id="msg" role="status"></p>
+  </section>
+  <div id="app"></div>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bauphysik.js"></script>
+<script>
+/* Entschlüsselt lehrer.enc.json (AES-256-GCM, PBKDF2-SHA256) im Browser; das Passwort verlässt das Gerät nie. */
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function open_(pw){
+  const box=await fetch("lehrer.enc.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("datei");return r.json()});
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(box.salt),iterations:box.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(box.iv)},key,b64(box.ct));
+  return new TextDecoder().decode(plain);
+}
+$("pwform").onsubmit=async e=>{
+  e.preventDefault();$("go").disabled=true;$("msg").textContent="Wird entschlüsselt …";
+  try{
+    const code=await open_($("pw").value);
+    $("gate").hidden=true;new Function(code)();typeset($("app"));
+  }catch(err){
+    $("msg").textContent=err.message==="datei"?"Die verschlüsselte Datei fehlt noch auf dem Server.":"Falsches Passwort. Bitte noch einmal eingeben.";
+    $("pw").select();
+  }finally{$("go").disabled=false}
+};
+</script>
+</body>
+</html>
