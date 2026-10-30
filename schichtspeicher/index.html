@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Schichtspeicher · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>#tank text{font-family:var(--f-mono)} #tank .lbl{font-family:var(--f-display);font-weight:600}
+.toggles{display:grid;gap:8px}.toggles label{display:flex;gap:10px;align-items:center;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+.toggles label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}.toggles small{color:var(--muted);display:block;font-size:12px}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Schichtspeicher</h1>
+      <p class="sub">Warmes Wasser ist leichter als kaltes und bleibt oben. Ein gut geschichteter Speicher liefert deshalb schon heißes Wasser, wenn er erst zum Teil geladen ist. Probiere aus, was die Schichtung aufbaut und was sie zerstört.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Simulation</h2>
+    <div class="grid">
+      <div><svg id="tank" viewBox="0 0 560 520" width="100%" role="img" aria-label="Speicher im Schnitt mit Temperaturschichten und Temperaturprofil"></svg></div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="playbar"><button class="primary" id="play">Pause</button><span class="badge" id="clock">00:00 h</span>
+          <label class="fl" style="flex:1;min-width:160px">Zeitraffer <output id="o-sp"></output><input type="range" id="sp" min="1" max="60" value="10"></label></div>
+        <div class="playbar"><span class="c">Start:</span><button data-start="kalt">kalt 10 °C</button><button data-start="schicht">geschichtet</button><button data-start="misch">durchmischt</button></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="t-zapf"> Warmwasser zapfen <small>12 l/min oben heraus, Kaltwasser 10 °C strömt unten nach</small></label>
+          <label><input type="checkbox" id="t-kessel"> Nachheizung oben <small>Kessel, 8 kW über den oberen Wärmetauscher, Vorlauf 70 °C</small></label>
+          <label><input type="checkbox" id="t-solar"> Solar über Wärmetauscher unten <small>3 kW in den unteren Teil, Vorlauf 60 °C</small></label>
+          <label><input type="checkbox" id="t-lanze"> Solar über Schichtenlanze <small>3 kW, Wasser mit 50 °C strömt in die Schicht mit gleicher Temperatur</small></label>
+          <label><input type="checkbox" id="t-wirbel"> Einströmung ohne Prallplatte <small>Solarladung wirbelt den ganzen Speicher durch</small></label>
+        </div>
+        <label class="fl">Speichervolumen \(V\) <output id="o-v"></output><input type="range" id="vol" min="150" max="1000" step="50" value="300"></label>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="result"><span class="lab">gespeicherte Wärme (über 10 °C)</span><span class="val" id="r-q">–</span><span class="unit">\(\mathrm{kWh}\)</span></div>
+      <div class="result"><span class="lab">Wasser \(\ge 45\,^\circ\mathrm{C}\) im Speicher</span><span class="val" id="r-hot">–</span><span class="unit">\(\mathrm{l}\)</span></div>
+      <div class="result"><span class="lab">zapfbar mit 45 °C (gemischt)</span><span class="val" id="r-mix">–</span><span class="unit">\(\mathrm{l}\)</span><span class="pill neu" id="r-cmp"></span></div>
+      <div class="result"><span class="lab">Mischtemperatur \(\vartheta_m\)</span><span class="val dp" id="r-tm">–</span><span class="unit">\(^\circ\mathrm{C}\)</span></div>
+    </div>
+    <p class="callout" id="hint"></p>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>Warmes Wasser ist leichter</h3><p>Wasser hat bei \(10\,^\circ\mathrm{C}\) eine Dichte von etwa \(999{,}7\,\mathrm{kg/m^3}\), bei \(60\,^\circ\mathrm{C}\) nur \(983\,\mathrm{kg/m^3}\). Das warme Wasser schwimmt oben. Ohne Strömung bleiben die Schichten lange getrennt; nur Wärmeleitung gleicht sie langsam aus.</p></div>
+      <div><h3>Gespeicherte Wärme \(Q = m \cdot c \cdot \Delta\vartheta\)</h3><p>Mit \(c = 4190\,\mathrm{J/(kg\,K)}\) und \(m = 1\,\mathrm{kg}\) pro Liter. 300 Liter um 40 K erwärmt speichern \(300\cdot4190\cdot40 = 50{,}3\,\mathrm{MJ} = 14\,\mathrm{kWh}\).</p></div>
+      <div><h3>Mischtemperatur \(\vartheta_m = \dfrac{m_1\vartheta_1 + m_2\vartheta_2}{m_1 + m_2}\)</h3><p>Wird ein geschichteter Speicher durchgemischt, bleibt die Energie gleich, aber alles Wasser hat die Mischtemperatur. Liegt sie unter 45 °C, kommt kein brauchbares Warmwasser mehr heraus, obwohl die Wärme noch da ist.</p></div>
+      <div><h3>Wärmetauscher unten und oben</h3><p>Der Solar-Wärmetauscher liegt unten beim kältesten Wasser: großer Temperaturunterschied, gute Übertragung, kalter Rücklauf zum Kollektor (höherer Wirkungsgrad). Die Nachheizung hält nur den oberen Bereitschaftsteil warm und lässt unten Platz für Solarwärme.</p></div>
+      <div><h3>Schichtenlanze und Prallplatte</h3><p>Eine Schichtenlanze lässt das Wasser dort austreten, wo der Speicher dieselbe Temperatur hat. So wird warmes Wasser oben nicht mit lauwarmem verdünnt. Eine Prallplatte am Einlauf bremst den Wasserstrahl, damit er die Schichten nicht verwirbelt.</p></div>
+      <div><h3>Hygiene</h3><p>In stehendem Trinkwasser zwischen 25 und 50 °C vermehren sich Legionellen. Trinkwasserspeicher werden deshalb regelmäßig auf 60 °C aufgeheizt oder man nutzt einen Pufferspeicher mit Frischwasserstation.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Skript Kapitel 10.6 Speicherbauformen · \(c_{Wasser} = 4190\,\mathrm{J/(kg\,K)}\)</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/speicher.js"></script>
+<script>
+let tk,simT=0,run=!matchMedia("(prefers-reduced-motion: reduce)").matches,last=0,flowT=0;
+function start(kind){
+  tk=new Tank(val("vol"),{N:40,Tk:10,Tamb:18});simT=0;
+  if(kind==="schicht")tk.set(z=>z<.45?10+6*z/.45:z<.6?16+44*(z-.45)/.15:60);
+  if(kind==="misch"){tk.set(z=>z<.45?10+6*z/.45:z<.6?16+44*(z-.45)/.15:60);tk.mixAll()}
+  update();
+}
+const on=id=>$(id).checked;
+function step(dt){ // dt in s
+  if(on("t-zapf"))tk.draw(12/60*dt);
+  if(on("t-kessel")){const P=8000*Math.max(0,Math.min(1,(70-tk.T[Math.round(.75*(tk.N-1))])/10));tk.heat(.66,.84,P,dt,70)}
+  if(on("t-solar")){const P=3000*Math.max(0,Math.min(1,(60-tk.T[3])/8));tk.heat(.04,.28,P,dt,60);if(on("t-wirbel")&&P>0)tk.mixAll()}
+  if(on("t-lanze")){const Tb=tk.T[0];if(50>Tb+1){const vol=3000*dt/(RHO_C*(50-Tb));if(on("t-wirbel")){tk.heat(0,1,3000,dt,50);tk.mixAll()}else tk.lance(vol,50)}}
+  tk.conduct(dt);
+}
+function draw(){
+  const x=70,y=40,w=150,h=430;let s=tankSVG(tk,{x,y,w,h,id:1,sensors:[.95,.75,.5,.25,.05]});
+  // Anschlüsse und Wärmetauscher
+  const zy=z=>y+h-z*h,coil=(z0,z1,col,act)=>{let p=`M ${x-30} ${zy(z1)}`;const n=6;for(let k=0;k<=n;k++){const yy=zy(z1)+(zy(z0)-zy(z1))*k/n;p+=` L ${x+(k%2?w-14:14)} ${yy}`}p+=` L ${x-30} ${zy(z0)}`;return`<path d="${p}" fill="none" stroke="${col}" stroke-width="${act?4:2.5}" opacity="${act?1:.45}" stroke-linejoin="round"/>`};
+  s+=coil(.66,.84,"var(--bad)",on("t-kessel"))+coil(.04,.28,"#f5b42a",on("t-solar"));
+  s+=`<text class="lbl" x="${x-34}" y="${zy(.85)-6}" text-anchor="end" font-size="12" fill="var(--bad)">Kessel</text><text class="lbl" x="${x-34}" y="${zy(.29)-6}" text-anchor="end" font-size="12" fill="#c58a12">Solar</text>`;
+  if(on("t-lanze")){let k=0;for(let i=0;i<tk.N;i++)if(tk.T[i]<=50)k=i;const ly=y+h-(k+.5)*h/tk.N;
+    s+=`<rect x="${x+w*.42}" y="${zy(.92)}" width="10" height="${zy(.06)-zy(.92)}" fill="none" stroke="var(--ink)" stroke-opacity=".6"/><circle cx="${x+w*.42+5}" cy="${ly}" r="7" fill="#f5b42a" stroke="var(--ink)"/>`;
+    s+=`<text x="${x+w*.42+14}" y="${ly-10}" font-size="11" fill="var(--ink)" paint-order="stroke" stroke="var(--panel)" stroke-width="3">Lanze tritt hier aus</text>`}
+  const dash=`stroke-dasharray="8 6" stroke-dashoffset="${-flowT*30}"`;
+  s+=`<line x1="${x+w/2}" y1="${y-6}" x2="${x+w/2}" y2="${y-34}" stroke="${on("t-zapf")?"var(--bad)":"var(--line)"}" stroke-width="5" ${on("t-zapf")?dash:""}/><text x="${x+w/2+8}" y="${y-22}" font-size="11" fill="var(--muted)">Warmwasser</text>`;
+  s+=`<line x1="${x+w+6}" y1="${y+h-8}" x2="${x+w+40}" y2="${y+h-8}" stroke="${on("t-zapf")?"var(--cold)":"var(--line)"}" stroke-width="5" ${on("t-zapf")?dash:""}/><text x="${x+w+44}" y="${y+h-4}" font-size="11" fill="var(--muted)">Kaltwasser</text>`;
+  // Temperaturprofil
+  const px=380,pw=160,X=t=>px+(t-10)/65*pw,Y=z=>y+h-z*h;
+  s+=`<rect x="${px}" y="${y}" width="${pw}" height="${h}" fill="none" stroke="var(--line)"/>`;
+  [10,30,45,60,75].forEach(t=>s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${y}" y2="${y+h}" stroke="var(--line)" ${t===45?'stroke-dasharray="4 4" stroke="var(--accent)"':""}/><text x="${X(t)}" y="${y+h+16}" text-anchor="middle" font-size="10" fill="var(--muted)">${t}°</text>`);
+  s+=`<polyline points="${Array.from(tk.T).map((t,i)=>`${X(t).toFixed(1)},${Y((i+.5)/tk.N).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--bad)" stroke-width="3"/>`;
+  const tm=tk.mean();s+=`<line x1="${X(tm)}" x2="${X(tm)}" y1="${y}" y2="${y+h}" stroke="var(--cold)" stroke-width="2" stroke-dasharray="6 4"/><text x="${X(tm)+4}" y="${y+12}" font-size="10" fill="var(--cold)">ϑm</text>`;
+  s+=`<text x="${px+pw/2}" y="${y-12}" text-anchor="middle" font-size="12" fill="var(--muted)">Temperatur über der Höhe</text>`;
+  s+=colorScaleSVG(x,y+h+26,w);
+  $("tank").innerHTML=s;
+}
+let lastNum=0;
+function update(){
+  draw();if(performance.now()-lastNum<150)return;lastNum=performance.now();
+  const Q=tk.energy(10)/3.6e6,hot=tk.hotVolume(45),mix=tk.mixedVolume(45),tm=tk.mean(),mixIf=tm>=45?tk.V*(tm-10)/35:0;
+  $("r-q").textContent=fmt(Q,2);$("r-hot").textContent=fmt(hot,0);$("r-mix").textContent=fmt(mix,0);$("r-tm").textContent=fmt(tm,1);
+  $("r-cmp").textContent=`durchmischt nur ${fmt(mixIf,0)} l`;
+  const h=Math.floor(simT/3600),m=Math.floor(simT%3600/60);$("clock").textContent=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")} h`;
+  $("hint").textContent=on("t-wirbel")&&(on("t-solar")||on("t-lanze"))?"Die Einströmung wirbelt alles durch: Der Speicher hat überall dieselbe Temperatur. Es dauert lange, bis oben 45 °C erreicht sind."
+    :on("t-lanze")?"Die Lanze bringt das 50 °C warme Wasser genau in die passende Schicht. Oben bleibt heißes Wasser heiß, unten bleibt es kalt für den Kollektor."
+    :on("t-solar")?"Der Solar-Wärmetauscher erwärmt das Wasser um ihn herum. Es steigt auf: Über dem Wärmetauscher wird der Speicher gleichmäßig wärmer, darunter bleibt er kalt. Vergleiche nach einer Stunde mit der Schichtenlanze: gleiche Energie, aber kein Wasser über 45 °C."
+    :on("t-zapf")?"Beim Zapfen schiebt das Kaltwasser die Schichten nach oben. Die Grenze zwischen warm und kalt (Thermokline) wandert hoch, bis nur noch lauwarmes Wasser kommt."
+    :on("t-kessel")?"Die Nachheizung erwärmt nur den oberen Bereitschaftsteil. Unten bleibt Platz für Solarwärme."
+    :"Schalte einen Vorgang ein. Ohne Strömung gleichen sich die Schichten nur sehr langsam durch Wärmeleitung aus, und der Speicher kühlt über die Dämmung ab.";
+}
+function loop(ts){const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;
+  if(run){let sim=dt*val("sp")*60;flowT+=dt;while(sim>0){const d=Math.min(10,sim);step(d);sim-=d;simT+=d}}
+  update();requestAnimationFrame(loop)}
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Weiter"};if(!run)$("play").textContent="Weiter";
+document.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>start(b.dataset.start));
+$("sp").oninput=()=>$("o-sp").textContent=`${val("sp")} min/s`;$("o-sp").textContent=`${val("sp")} min/s`;
+$("vol").oninput=()=>{$("o-v").textContent=`${val("vol")} l`;start("schicht")};$("o-v").textContent=`${val("vol")} l`;
+start("schicht");requestAnimationFrame(loop);
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const V=pk([200,300,400,500]),t1=pk([10,12,15]),t2=pk([55,60,65]),Q=V*4190*(t2-t1)/3.6e6;
+  const m1=pk([100,150,200]),T1=pk([60,65]),m2=pk([100,150,200]),T2=pk([15,20,25]),tm=(m1*T1+m2*T2)/(m1+m2);
+  const P=pk([3,6,9]),th=Q/P;
+  const T=[
+    {kind:"num",q:`Ein Speicher mit \\(V = ${V}\\,\\mathrm{l}\\) wird von \\(${t1}\\,^\\circ\\mathrm{C}\\) auf \\(${t2}\\,^\\circ\\mathrm{C}\\) erwärmt. Wie viel Wärme speichert er (in kWh)?`,ans:Q,unit:"\\(\\mathrm{kWh}\\)",tol:.02,sol:`\\(Q = m\\cdot c\\cdot\\Delta\\vartheta = ${V}\\cdot4190\\cdot${t2-t1} = ${n_(V*4190*(t2-t1),0)}\\,\\mathrm{J} = ${n_(Q,2)}\\,\\mathrm{kWh}\\)`},
+    {kind:"num",q:`Wie lange braucht eine Heizleistung von \\(${P}\\,\\mathrm{kW}\\) dafür (ohne Verluste)?`,ans:th,unit:"\\(\\mathrm{h}\\)",tol:.03,sol:`\\(t = Q/P = ${n_(Q,2)}/${P} = ${n_(th,2)}\\,\\mathrm{h}\\)`},
+    {kind:"num",q:`Im Speicher liegen oben \\(${m1}\\,\\mathrm{l}\\) mit \\(${T1}\\,^\\circ\\mathrm{C}\\) und unten \\(${m2}\\,\\mathrm{l}\\) mit \\(${T2}\\,^\\circ\\mathrm{C}\\). Welche Temperatur hat das Wasser, wenn alles durchgemischt wird?`,ans:tm,unit:"\\(^\\circ\\mathrm{C}\\)",atol:.2,sol:`\\(\\vartheta_m = \\frac{${m1}\\cdot${T1} + ${m2}\\cdot${T2}}{${m1}+${m2}} = ${n_(tm,1)}\\,^\\circ\\mathrm{C}\\)${tm<45?" – zu kalt zum Duschen, obwohl oben vorher heißes Wasser war.":""}`},
+    {kind:"sel",q:"Warum sitzt der Solar-Wärmetauscher unten im Speicher?",opts:["Dort ist das Wasser am kältesten, die Wärmeübertragung ist groß und der Kollektor bekommt kalten Rücklauf","Weil warmes Wasser nach unten sinkt","Damit die Nachheizung mehr Platz hat"],ans:0,sol:"Kalter Rücklauf senkt die Kollektortemperatur: \\(\\eta = \\eta_0 - \\frac{k_1\\Delta T + k_2\\Delta T^2}{E_K}\\) wird größer."},
+    {kind:"sel",q:"Was macht eine Schichtenlanze?",opts:["Sie lässt das Wasser in der Schicht mit gleicher Temperatur austreten","Sie mischt den Speicher gleichmäßig","Sie misst die Temperatur"],ans:0,sol:"So wird die Schichtung nicht zerstört: Lauwarmes Solarwasser verdünnt das heiße Wasser oben nicht."},
+    {kind:"sel",q:"Was passiert mit der gespeicherten Energie, wenn ein geschichteter Speicher durchgemischt wird?",opts:["Sie bleibt gleich, aber es gibt weniger nutzbares heißes Wasser","Sie wird größer","Sie geht verloren"],ans:0,sol:"Energie bleibt erhalten (Mischtemperatur), die Temperatur ist aber überall niedriger."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+</script>
+</body>
+</html>

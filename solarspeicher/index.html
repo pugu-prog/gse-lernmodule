@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Solarspeicher · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>#plant text,#day text{font-family:var(--f-mono)} #plant .lbl{font-family:var(--f-display);font-weight:600}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Solarspeicher</h1>
+      <p class="sub">Eine Solaranlage für Warmwasser über einen ganzen Tag in Ettelbruck: Wie viel Wärme liefern die Kollektoren, wie füllt sich der bivalente Speicher, und wann muss die Nachheizung einspringen?</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Ein Tag mit der Solaranlage</h2>
+    <div class="ctrls">
+      <label>Monat<select id="mon"></select></label>
+      <label>Wetter<select id="wet"><option value="0.4">trüber Tag</option><option value="1" selected>Monatsmittel</option><option value="1.7">sonniger Tag</option></select></label>
+      <label>Kollektor<select id="kol"><option value="flach" selected>Flachkollektor</option><option value="vak">Vakuum-Röhrenkollektor</option></select></label>
+      <label>Neigung<select id="nei"><option value="1" selected>45°</option><option value="2">60°</option><option value="3">90° (Fassade)</option></select></label>
+      <label>Ausrichtung<select id="aus"></select></label>
+      <label>Kollektorfläche \(A\) <output id="o-a"></output><input type="range" id="a" min="2" max="12" step="0.5" value="5"></label>
+      <label>Speicher \(V\) <output id="o-v"></output><input type="range" id="v" min="150" max="800" step="50" value="300"></label>
+      <label>Personen <output id="o-p"></output><input type="range" id="p" min="1" max="6" value="4"></label>
+      <label>Verbrauch je Person<select id="vb"><option value="22">niedrig (15–30 l)</option><option value="45" selected>mittel (30–60 l)</option><option value="90">hoch (60–120 l)</option></select></label>
+      <label>Nachheizung oben<select id="nh"><option value="1" selected>an (hält 50 °C)</option><option value="0">aus (nur Solar)</option></select></label>
+    </div>
+    <div class="playbar"><button class="primary" id="play">Tag abspielen</button><button id="now">Sofort ganzen Tag rechnen</button><span class="badge" id="clock">00:00</span><span class="c">Der Vortag wird mitgerechnet, damit der Speicher morgens realistisch gefüllt ist.</span></div>
+    <div class="grid">
+      <svg id="plant" viewBox="0 0 560 460" width="100%" role="img" aria-label="Solaranlage mit Kollektor, Rohrleitungen, Speicher und Nachheizung"></svg>
+      <div><svg id="day" viewBox="0 0 560 360" width="100%" role="img" aria-label="Tagesverlauf von Einstrahlung, Kollektorleistung und Speichertemperaturen"></svg>
+        <div class="legend"><span><i class="lg" style="border-top:2.5px solid #f5b42a"></i>Einstrahlung \(E_K\)</span><span><i class="lg" style="border-top:2.5px solid var(--warm)"></i>Solarleistung</span><span><i class="lg t"></i>Speicher oben</span><span><i class="lg p"></i>Speicher unten</span></div></div>
+    </div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Solarertrag \(Q_{sol}\)</span><span class="val" id="r-sol">–</span><span class="unit">\(\mathrm{kWh}\)</span><span class="pill neu" id="r-eta"></span></div>
+      <div class="result"><span class="lab">Nachheizung \(Q_{NH}\)</span><span class="val dp" id="r-nh">–</span><span class="unit">\(\mathrm{kWh}\)</span></div>
+      <div class="result"><span class="lab">solarer Deckungsgrad \(s_D\)</span><span class="val" id="r-sd">–</span><span class="unit">%</span><span class="pill" id="r-ww"></span></div>
+    </div>
+    <div class="steps" id="calc"></div>
+  </section>
+
+  <section class="simbox">
+    <h2>Anlage auslegen (Formelsammlung Kapitel 17)</h2>
+    <div class="ctrls">
+      <label>Auslegungsmonat<select id="dmon"></select></label>
+      <label>Anlagenwirkungsgrad \(\eta_{Anl}\) <output id="o-eta"></output><input type="range" id="eta" min="0.25" max="0.6" step="0.01" value="0.5"></label>
+      <label>Speicherladung \(\vartheta_{kalt} \to \vartheta_{warm}\)<select id="dt"><option value="35" selected>10 → 45 °C</option><option value="50">10 → 60 °C</option></select></label>
+    </div>
+    <div class="steps" id="design"></div>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>Kollektorwirkungsgrad \(\eta = \eta_0 - \dfrac{k_1\Delta T + k_2\Delta T^2}{E_K}\)</h3><p>\(\Delta T\) ist der Unterschied zwischen mittlerer Kollektortemperatur und Umgebung. Flachkollektor: \(\eta_0 = 0{,}75\), \(k_1 = 3{,}40\), \(k_2 = 0{,}012\). Vakuumröhre: \(0{,}64\), \(0{,}69\), \(0{,}004\). Je kälter der Speicher unten, desto besser arbeitet der Kollektor.</p></div>
+      <div><h3>Wärme vom Kollektor \(Q = E_K \cdot A \cdot \eta_K \cdot t\)</h3><p>Bei \(800\,\mathrm{W/m^2}\), \(3\,\mathrm{m^2}\) und \(\eta_K = 0{,}6\) sind das \(1440\,\mathrm{W}\). In einer Stunde erwärmt das 100 Liter um \(\Delta\vartheta = Q/(m\cdot c) = 12{,}4\,\mathrm{K}\).</p></div>
+      <div><h3>Bivalenter Speicher</h3><p>Zwei Wärmetauscher laden denselben Speicher: Solar unten beim kalten Wasser, Nachheizung oben. Die Nachheizung hält nur den oberen Bereitschaftsteil warm, damit unten Platz für die Sonnenwärme bleibt.</p></div>
+      <div><h3>Solarer Deckungsgrad \(s_D = \dfrac{Q_{sol}}{Q_{sol} + Q_{NH}}\)</h3><p>Anteil der Wärme, den die Sonne liefert. Im Sommer erreicht eine gut ausgelegte Warmwasseranlage fast 100 %, über das Jahr etwa 50 bis 60 %.</p></div>
+      <div><h3>Speichergröße</h3><p>Richtwert: Der Speicher deckt den Warmwasserbedarf für zwei Tage, damit nicht bei jedem bewölkten Tag die Zusatzheizung anspringt. Bedarf je Person und Tag bei 45 °C: niedrig 15–30 l, mittel 30–60 l, hoch 60–120 l.</p></div>
+      <div><h3>Ausrichtung und Neigung</h3><p>Der Auslegungsbeiwert \(f\) vergrößert die Fläche, wenn die Kollektoren nicht nach Süden zeigen: Südwest 1,09, Südost 1,1, Osten 1,6. Die Strahlung für Ettelbruck stammt aus PVGIS-SARAH für 45°, 60° und 90° Neigung.</p></div>
+    </div>
+    <p class="note">Vereinfachungen der Simulation: Tagesgang der Strahlung als Sinusbogen zwischen Sonnenauf- und -untergang; „sonniger“ und „trüber Tag“ sind 170 % bzw. 40 % des Monatsmittels; Kollektortemperatur = Speicher unten + 5 K; Pumpe läuft, solange der Kollektor Wärme gewinnt; Zapfungen um 7, 12 und 19 Uhr (35 %, 15 %, 50 %).</p>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Strahlung Ettelbruck: PVGIS-SARAH 2016 · Temperaturen: ERA5 2016–2025</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/speicher.js"></script>
+<script>
+/* ---------- Daten Ettelbruck ---------- */
+const MON=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],DAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
+// Monatssummen in kWh/m²: [horizontal, 45°, 60°, 90°] (SolareEinstrahlung Ettelbruck.xlsx, PVGIS-SARAH 2016)
+const HM=[[16.03,26.12,27.15,25.3],[38.18,54.96,55.5,48.33],[63.99,79.48,77.44,62.67],[109.13,113.96,105.81,76.72],[138.88,135.92,123.15,83.25],[131.84,121.35,108.28,71.34],
+  [157.93,148.43,132.73,87.26],[149.91,160.3,148.08,102.94],[114.88,146.05,141.6,110.46],[55.92,77.79,77.97,66.85],[28.78,47.57,49.45,45.5],[27.26,60.14,65.05,63.33]];
+const TM=[2.7,4.2,6.4,9.5,13.7,18.3,19.1,19.3,15.6,11.5,6.4,4.2];   // Monatsmittel Lufttemperatur Ettelbruck 2016–2025
+const AUS=[["Süden",1],["Süd-Südost",1.03],["Süd-Südwest",1.02],["Südost",1.1],["Südwest",1.09],["Ost-Südost",1.42],["West-Südwest",1.2],["Osten",1.6],["Westen",1.4]];
+const KOL={flach:{n:"Flachkollektor",e0:.75,k1:3.40,k2:.012},vak:{n:"Vakuum-Röhrenkollektor",e0:.64,k1:.69,k2:.004}};
+$("mon").innerHTML=$("dmon").innerHTML=MON.map((m,i)=>`<option value="${i}">${m}</option>`).join("");$("mon").value=5;$("dmon").value=5;
+$("aus").innerHTML=AUS.map((a,i)=>`<option value="${i}">${a[0]} (f = ${fmt(a[1],2)})</option>`).join("");
+const PHI=49.85*Math.PI/180;
+function sunDay(m){const n=[17,47,75,105,135,162,198,228,258,288,318,344][m],d=23.45*Math.sin(Math.PI/180*360/365*(284+n))*Math.PI/180;
+  const ws=Math.acos(-Math.tan(PHI)*Math.tan(d))*180/Math.PI,len=2*ws/15;return{sr:12-len/2,ss:12+len/2,len}}
+function setup(){
+  const m=+$("mon").value,f=AUS[+$("aus").value][1],Hd=HM[m][+$("nei").value]/DAYS[m]*(+$("wet").value)/f,sd=sunDay(m);
+  return{m,f,Hd,sd,Emax:Hd*1000*Math.PI/(2*sd.len),K:KOL[$("kol").value],A:val("a"),V:val("v"),need:val("p")*(+$("vb").value),nh:$("nh").value==="1"};
+}
+const E=(S,t)=>t>S.sd.sr&&t<S.sd.ss?S.Emax*Math.sin(Math.PI*(t-S.sd.sr)/S.sd.len):0;
+const TU=(S,t)=>TM[S.m]+4*Math.sin(Math.PI*(t-9)/12);
+const DRAWS=[[7,.35],[12,.15],[19,.5]];
+/* ---------- Simulation ---------- */
+let S,tk,acc,hist,simT,anim=false,last=0,auxOn=false;
+function reset(){
+  S=setup();tk=new Tank(S.V,{N:40,Tk:10,Tamb:18,T0:20});
+  // Vortag: einschwingen ohne Aufzeichnung
+  acc=null;for(simT=0;simT<24*3600;)tick(60,true);
+  simT=0;acc={sol:0,nh:0,ww:0,def:0,col:0,rad:0,tmax:0,need45:0};hist=[];tk.Qloss=0;
+}
+function tick(dt,warm){
+  const t=simT/3600,e=E(S,t),tb=tk.T[2],dT=tb+5-TU(S,t);
+  let eta=e>0?S.K.e0-(S.K.k1*dT+S.K.k2*dT*dT)/e:0;eta=Math.max(0,eta);let P=e*S.A*eta*0.9;
+  if(tk.T[tk.N-1]>=90)P=0;   // Maximaltemperatur: Pumpe aus
+  if(P>0)tk.heat(.03,.28,P,dt,95);
+  // Nachheizung oben, Fühler auf 70 % Höhe, Schaltdifferenz 5 K
+  const ts=tk.T[Math.round(.7*(tk.N-1))];if(S.nh){if(ts<45)auxOn=true;if(ts>=50)auxOn=false}else auxOn=false;
+  const Pa=auxOn?6000:0;if(Pa)tk.heat(.62,.8,Pa,dt,70);
+  // Zapfungen: jeweils über 30 min, Mischventil auf 45 °C
+  let dv=0;DRAWS.forEach(([h,fr])=>{if(t>=h&&t<h+.5)dv+=S.need*fr*dt/1800});
+  if(dv>0){const top=tk.T[tk.N-1],vt=top>45?dv*(45-10)/(top-10):dv;const tout=tk.draw(vt);
+    if(acc){acc.ww+=vt*RHO_C*(tout-10)/3.6e6;acc.need45+=dv*RHO_C*35/3.6e6;if(top<45)acc.def+=dv*RHO_C*(45-top)/3.6e6}}
+  tk.conduct(dt);
+  if(acc){acc.sol+=P*dt/3.6e6;acc.nh+=Pa*dt/3.6e6;acc.rad+=e*S.A*dt/3.6e6;acc.tmax=Math.max(acc.tmax,tk.T[tk.N-1]);
+    if(Math.round(simT)%600===0)hist.push({t,e,P,top:tk.T[tk.N-1],bot:tk.T[1],aux:Pa>0})}
+  simT+=dt;return{P,Pa,e,eta,dv};
+}
+let cur={P:0,Pa:0,e:0,eta:0,dv:0};
+function drawPlant(){
+  let s="";const kx=40,ky=40,kw=170,kh=90,t=simT/3600,on=cur.P>0;
+  s+=`<polygon points="${kx},${ky+kh} ${kx+kw},${ky+kh} ${kx+kw-30},${ky} ${kx+30},${ky}" fill="${wcol(on?tk.T[2]+5+cur.eta*30:TU(S,t)+cur.e/25)}" stroke="var(--ink)" stroke-opacity=".6"/>`;
+  for(let k=1;k<6;k++)s+=`<line x1="${kx+30*(1-0)+(kw-60)*k/6}" y1="${ky}" x2="${kx+(kw)*k/6}" y2="${ky+kh}" stroke="var(--panel)" stroke-opacity=".5"/>`;
+  s+=`<text class="lbl" x="${kx}" y="${ky-12}" font-size="13" fill="var(--ink)">${S.K.n}, ${fmt(S.A,1)} m²</text>`;
+  if(cur.e>0){s+=`<circle cx="${kx+kw+60}" cy="${ky-6}" r="18" fill="#f5b42a"/><text x="${kx+kw+60}" y="${ky+28}" text-anchor="middle" font-size="12" fill="var(--ink)">${fmt(cur.e,0)} W/m²</text>`}
+  else s+=`<circle cx="${kx+kw+60}" cy="${ky}" r="13" fill="#9aa6a1" opacity=".6"/>`;
+  // Rohre zum Speicher
+  const tx=330,ty=150,tw=110,th=280,dash=on?`stroke-dasharray="9 7" stroke-dashoffset="${-(performance.now()/40)%32}"`:"";
+  s+=`<path d="M ${kx+kw-30} ${ky} C 300 ${ky}, 280 ${ty+th*.72}, ${tx-30} ${ty+th*.72}" fill="none" stroke="var(--warm)" stroke-width="5" ${dash} opacity="${on?1:.35}"/>`;
+  s+=`<path d="M ${kx+30} ${ky+kh} C 120 ${ty+th}, 250 ${ty+th*.97}, ${tx-30} ${ty+th*.97}" fill="none" stroke="var(--cold)" stroke-width="5" ${dash} opacity="${on?1:.35}"/>`;
+  s+=`<text x="${kx+40}" y="${ky+kh+28}" font-size="12" fill="var(--muted)">Pumpe ${on?"an":"aus"} · η = ${fmt(cur.eta,2)} · ${fmt(cur.P/1000,2)} kW</text>`;
+  s+=tankSVG(tk,{x:tx,y:ty,w:tw,h:th,id:2,sensors:[.95,.7,.3,.05]});
+  const zy=z=>ty+th-z*th,coil=(z0,z1,col,act)=>{let p=`M ${tx-30} ${zy(z1)}`;for(let k=0;k<=6;k++){const yy=zy(z1)+(zy(z0)-zy(z1))*k/6;p+=` L ${tx+(k%2?tw-12:12)} ${yy}`}return`<path d="${p} L ${tx-30} ${zy(z0)}" fill="none" stroke="${col}" stroke-width="${act?4:2.4}" opacity="${act?1:.45}"/>`};
+  s+=coil(.03,.28,"#f5b42a",on)+coil(.62,.8,"var(--bad)",cur.Pa>0);
+  s+=`<rect x="${tx-120}" y="${zy(.82)-8}" width="70" height="44" rx="6" fill="${cur.Pa>0?"var(--bad)":"var(--line)"}"/><text class="lbl" x="${tx-85}" y="${zy(.82)+18}" text-anchor="middle" font-size="12" fill="${cur.Pa>0?"var(--panel)":"var(--muted)"}">Nachheizung</text>`;
+  s+=`<line x1="${tx+tw/2}" y1="${ty-6}" x2="${tx+tw/2}" y2="${ty-36}" stroke="${cur.dv>0?"var(--bad)":"var(--line)"}" stroke-width="5"/><text x="${tx+tw/2+8}" y="${ty-24}" font-size="11" fill="var(--muted)">${cur.dv>0?"Zapfung":"Warmwasser"}</text>`;
+  s+=colorScaleSVG(tx-10,ty+th+20,tw+20);
+  $("plant").innerHTML=s;
+}
+function drawDay(){
+  const W=560,H=360,x0=46,x1=510,yt=20,yb=310,X=t=>x0+t/24*(x1-x0),Ye=v=>yb-v/1000*(yb-yt),Yt=v=>yb-(v-0)/90*(yb-yt);
+  let s="";for(let v=0;v<=90;v+=15)s+=`<line x1="${x0}" x2="${x1}" y1="${Yt(v)}" y2="${Yt(v)}" stroke="var(--line)"/><text x="${x1+6}" y="${Yt(v)+4}" font-size="10" fill="var(--muted)">${v}°</text>`;
+  for(let v=0;v<=1000;v+=250)s+=`<text x="${x0-6}" y="${Ye(v)+4}" text-anchor="end" font-size="10" fill="#c58a12">${v}</text>`;
+  for(let h=0;h<=24;h+=3)s+=`<text x="${X(h)}" y="${yb+16}" text-anchor="middle" font-size="10" fill="var(--muted)">${h}h</text>`;
+  DRAWS.forEach(([h])=>s+=`<rect x="${X(h)}" y="${yt}" width="${X(h+.5)-X(h)}" height="${yb-yt}" fill="var(--cold)" opacity=".08"/>`);
+  let a=[];for(let t=0;t<=24;t+=.1)a.push(`${X(t)},${Ye(E(S,t))}`);s+=`<polygon points="${X(0)},${yb} ${a.join(" ")} ${X(24)},${yb}" fill="#f5b42a" opacity=".25"/><polyline points="${a.join(" ")}" fill="none" stroke="#f5b42a" stroke-width="2.4"/>`;
+  if(hist.length>1){const pl=(f,col,w)=>`<polyline points="${hist.map(h=>`${X(h.t)},${f(h)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}"/>`;
+    s+=pl(h=>Ye(h.P/S.A),"var(--warm)",2.4)+pl(h=>Yt(h.top),"var(--bad)",2.6)+pl(h=>Yt(h.bot),"var(--cold)",2.6);
+    hist.forEach(h=>{if(h.aux)s+=`<rect x="${X(h.t)}" y="${yb+20}" width="${(x1-x0)/144+.5}" height="6" fill="var(--bad)"/>`});}
+  s+=`<text x="${x0}" y="${yb+40}" font-size="10" fill="var(--muted)">W/m² (links) · °C (rechts) · rote Striche: Nachheizung an · blau hinterlegt: Zapfung</text>`;
+  s+=`<line x1="${X(simT/3600)}" x2="${X(simT/3600)}" y1="${yt}" y2="${yb}" stroke="var(--ink)" stroke-dasharray="3 3"/>`;
+  $("day").innerHTML=s;
+}
+function results(final){
+  const sD=acc.sol+acc.nh>0?acc.sol/(acc.sol+acc.nh):0,etaM=acc.rad>0?acc.sol/acc.rad/0.9:0;
+  $("r-sol").textContent=fmt(acc.sol,2);$("r-nh").textContent=fmt(acc.nh,2);$("r-sd").textContent=fmt(sD*100,0);
+  $("r-eta").innerHTML=`mittleres \\(\\eta_K = ${n_(etaM,2)}\\)`;
+  const w=$("r-ww");w.className="pill "+(acc.def>0.05?"bad":"ok");w.textContent=acc.def>0.05?`${fmt(acc.def,2)} kWh zu kalt gezapft`:"Warmwasser immer ≥ 45 °C";
+  const h=Math.floor(simT/3600),m=Math.floor(simT%3600/60);$("clock").textContent=`${String(Math.min(24,h)).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+  if(final){
+    const sd=S.sd,K=S.K,Qdem=S.need*RHO_C*35/3.6e6;
+    let c=`<p class="hd">Tageswerte für ${MON[S.m]} (${$("wet").selectedOptions[0].text})</p>`;
+    c+=M(`H_{Tag} = \\frac{${n_(HM[S.m][+$("nei").value],1)}\\,\\mathrm{kWh/m^2}}{${DAYS[S.m]}\\,\\mathrm{d}}\\cdot${n_(+$("wet").value,1)}\\,/\\,f = ${n_(S.Hd,2)}\\,\\frac{\\mathrm{kWh}}{\\mathrm{m^2\\,d}}`,`Strahlung auf die Kollektorebene, Sonnenschein ${hm(sd.sr)} bis ${hm(sd.ss)}`);
+    c+=M(`Q_{Bedarf} = ${n_(S.need,0)}\\,\\mathrm{l}\\cdot4190\\,\\tfrac{\\mathrm{J}}{\\mathrm{kg\\,K}}\\cdot(45-10)\\,\\mathrm{K} = ${n_(Qdem,2)}\\,\\mathrm{kWh}`,`${val("p")} Personen je ${$("vb").value} l bei 45 °C`);
+    c+=M(`\\eta_K = ${n_(K.e0,2)} - \\frac{${n_(K.k1,2)}\\cdot\\Delta T + ${n_(K.k2,3)}\\cdot\\Delta T^2}{E_K}`,"in jedem Zeitschritt mit aktueller Speicher- und Lufttemperatur");
+    c+=M(`s_D = \\frac{Q_{sol}}{Q_{sol}+Q_{NH}} = \\frac{${n_(acc.sol,2)}}{${n_(acc.sol,2)}+${n_(acc.nh,2)}} = \\mathbf{${n_(sD*100,0)}\\,\\%}`,`Verluste des Speichers: ${fmt(tk.Qloss/3.6e6,2)} kWh · höchste Speichertemperatur ${fmt(acc.tmax,0)} °C`);
+    $("calc").innerHTML=c;typeset([$("calc"),$("r-eta")]);
+  }
+}
+const hm=t=>`${String(Math.floor(t)).padStart(2,"0")}:${String(Math.round(t%1*60)).padStart(2,"0")}`;
+function runAll(){reset();while(simT<24*3600)cur=tick(60);results(true);drawPlant();drawDay()}
+function loop(ts){
+  const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;
+  if(anim){let sim=dt*1.5*3600;while(sim>0&&simT<24*3600){cur=tick(60);sim-=60}if(simT>=24*3600){anim=false;$("play").textContent="Tag abspielen";results(true)}else results(false)}
+  drawPlant();drawDay();requestAnimationFrame(loop);
+}
+$("play").onclick=()=>{if(anim){anim=false;$("play").textContent="Weiter";return}if(!acc||simT>=24*3600){reset()}anim=true;$("play").textContent="Pause"};
+$("now").onclick=()=>{anim=false;$("play").textContent="Tag abspielen";runAll()};
+const outs=()=>{$("o-a").textContent=`${fmt(val("a"),1)} m²`;$("o-v").textContent=`${val("v")} l`;$("o-p").textContent=`${val("p")}`;$("o-eta").textContent=fmt(val("eta"),2)};
+["mon","wet","kol","nei","aus","a","v","p","vb","nh"].forEach(id=>$(id).addEventListener("input",()=>{outs();anim=false;$("play").textContent="Tag abspielen";runAll()}));
+outs();runAll();requestAnimationFrame(loop);
+
+/* ---------- Auslegung ---------- */
+function design(){
+  const m=+$("dmon").value,ni=+$("nei").value,f=AUS[+$("aus").value][1],n=val("p"),vb=+$("vb").value,eta=val("eta"),dT=+$("dt").value;
+  const Vd=n*vb,Qmin=Vd*RHO_C*35/3.6e6,qd=HM[m][ni]/DAYS[m],AK=Qmin*f/(qd*eta),Vsp=2*Vd*35/dT,Qsp=Vsp*RHO_C*dT/3.6e6;
+  let h=`<p class="hd">1 · Täglicher Warmwasserbedarf</p>`;
+  h+=M(`V_{Tag} = ${n}\\cdot${vb}\\,\\mathrm{l} = ${Vd}\\,\\mathrm{l}\\quad Q_{min} = m\\cdot c\\cdot\\Delta\\vartheta = ${Vd}\\cdot4190\\cdot35 = ${n_(Vd*4190*35,0)}\\,\\mathrm{J} = \\mathbf{${n_(Qmin,2)}\\,\\mathrm{kWh}}`);
+  h+=`<p class="hd">2 · Kollektorfläche</p>`;
+  h+=M(`q_{d,max} = \\frac{${n_(HM[m][ni],1)}\\,\\mathrm{kWh/m^2}}{${DAYS[m]}} = ${n_(qd,2)}\\,\\frac{\\mathrm{kWh}}{\\mathrm{m^2\\,d}}`,`${MON[m]}, Neigung ${["0°","45°","60°","90°"][ni]}, Ettelbruck`);
+  h+=`<div class="tot">${M(`A_K = \\frac{Q_{min}\\cdot f}{q_{d,max}\\cdot\\eta_{Anl}} = \\frac{${n_(Qmin,2)}\\cdot${n_(f,2)}}{${n_(qd,2)}\\cdot${n_(eta,2)}} = \\mathbf{${n_(AK,1)}\\,\\mathrm{m^2}}`)}</div>`;
+  h+=`<p class="hd">3 · Speichervolumen (Bedarf für 2 Tage)</p>`;
+  h+=M(`V_{Sp} = 2\\cdot V_{Tag}${dT!==35?`\\cdot\\frac{35\\,\\mathrm{K}}{${dT}\\,\\mathrm{K}}`:""} = \\mathbf{${n_(Vsp,0)}\\,\\mathrm{l}}\\quad Q_{Sp} = ${n_(Vsp,0)}\\cdot4190\\cdot${dT} = ${n_(Qsp,1)}\\,\\mathrm{kWh}`,dT!==35?"wärmer geladen, also kleiner":"");
+  h+=`<p class="c">Probiere das Ergebnis oben in der Simulation aus: Fläche auf etwa ${fmt(AK,1)} m² und Speicher auf ${fmt(Math.round(Vsp/50)*50,0)} l stellen.</p>`;
+  $("design").innerHTML=h;typeset($("design"));
+}
+["dmon","eta","dt","nei","aus","p","vb"].forEach(id=>$(id).addEventListener("input",()=>{outs();design()}));design();
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const Ek=pk([600,700,800,900]),A=pk([2,3,4,5]),eK=pk([.5,.55,.6]),m=pk([100,150,200]),Q=Ek*A*eK*3600,dT=Q/(m*4190);
+  const K=pk(["flach","vak"]),k=KOL[K],dTk=pk([20,30,40,50]),E2=pk([400,600,800]),eta=k.e0-(k.k1*dTk+k.k2*dTk*dTk)/E2;
+  const n=pk([3,4,5]),vb=pk([30,40,50]),Qmin=n*vb*4190*35/3.6e6,qd=pk([3.5,4,4.5,5]),eA=pk([.4,.5]),f=pk([1,1.09,1.1]),AK=Qmin*f/(qd*eA);
+  const T=[
+    {kind:"num",q:`Bei einer Einstrahlung von \\(${Ek}\\,\\mathrm{W/m^2}\\) erwärmt ein \\(${A}\\,\\mathrm{m^2}\\) großer Kollektor mit \\(\\eta_K = ${n_(eK,2)}\\) eine Stunde lang \\(${m}\\,\\mathrm{l}\\) Wasser. Um wie viel Kelvin steigt die Temperatur?`,ans:dT,unit:"\\(\\mathrm{K}\\)",tol:.02,sol:`\\(Q = ${Ek}\\cdot${A}\\cdot${n_(eK,2)}\\cdot3600\\,\\mathrm{s} = ${n_(Q,0)}\\,\\mathrm{J}\\); \\(\\Delta\\vartheta = \\frac{Q}{m\\cdot c} = \\frac{${n_(Q,0)}}{${m}\\cdot4190} = ${n_(dT,1)}\\,\\mathrm{K}\\)`},
+    {kind:"num",q:`Wie groß ist der Wirkungsgrad eines ${k.n}s (\\(\\eta_0 = ${n_(k.e0,2)}\\), \\(k_1 = ${n_(k.k1,2)}\\), \\(k_2 = ${n_(k.k2,3)}\\)) bei \\(\\Delta T = ${dTk}\\,\\mathrm{K}\\) und \\(E_K = ${E2}\\,\\mathrm{W/m^2}\\)?`,ans:eta,unit:"",atol:.006,sol:`\\(\\eta = ${n_(k.e0,2)} - \\frac{${n_(k.k1,2)}\\cdot${dTk} + ${n_(k.k2,3)}\\cdot${dTk}^2}{${E2}} = ${n_(eta,3)}\\)`},
+    {kind:"num",q:`Ein Haushalt mit ${n} Personen braucht je \\(${vb}\\,\\mathrm{l}\\) Warmwasser von \\(45\\,^\\circ\\mathrm{C}\\) (Kaltwasser \\(10\\,^\\circ\\mathrm{C}\\)). Wie groß muss die Kollektorfläche sein bei \\(q_{d,max} = ${n_(qd,1)}\\,\\mathrm{kWh/(m^2\\,d)}\\), \\(\\eta_{Anl} = ${n_(eA,2)}\\) und \\(f = ${n_(f,2)}\\)?`,ans:AK,unit:"\\(\\mathrm{m^2}\\)",tol:.03,sol:`\\(Q_{min} = ${n*vb}\\cdot4190\\cdot35 = ${n_(Qmin,2)}\\,\\mathrm{kWh}\\); \\(A_K = \\frac{${n_(Qmin,2)}\\cdot${n_(f,2)}}{${n_(qd,1)}\\cdot${n_(eA,2)}} = ${n_(AK,2)}\\,\\mathrm{m^2}\\)`},
+    {kind:"sel",q:"Wann ist ein Vakuum-Röhrenkollektor einem Flachkollektor überlegen?",opts:["Bei großem Temperaturunterschied zur Umgebung und wenig Sonne (Winter, Heizungsunterstützung)","Bei hoher Einstrahlung und kaltem Speicher im Sommer","Nie"],ans:0,sol:"Er hat ein kleineres \\(\\eta_0\\), aber viel kleinere Verlustbeiwerte \\(k_1\\), \\(k_2\\). Probiere es in der Simulation im Dezember aus."},
+    {kind:"sel",q:"Warum ist der solare Deckungsgrad im Winter klein?",opts:["Wenig Strahlung und große Wärmeverluste des Kollektors bei kalter Luft","Weil der Speicher im Winter kleiner ist","Weil im Winter weniger Warmwasser gebraucht wird"],ans:0,sol:"Der Zähler \\(k_1\\Delta T + k_2\\Delta T^2\\) wird groß, \\(E_K\\) klein: \\(\\eta\\) sinkt stark."},
+    {kind:"sel",q:"Wofür steht der Richtwert „Speicher für zwei Tage“?",opts:["Bei einem bewölkten Tag muss die Zusatzheizung nicht sofort anspringen","Der Speicher muss alle zwei Tage geleert werden","Die Sonne scheint jeden zweiten Tag"],ans:0,sol:"Der Speicher überbrückt kurze Schlechtwetterphasen; Anlagenverluste sind darin nicht berücksichtigt."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+</script>
+</body>
+</html>

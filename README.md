@@ -9,13 +9,15 @@ Interaktive Lernmodule für **Sciences Environnementales** am Lycée Technique d
 | `sonnenstand/` | Sonnenstand über Ettelbruck und Verschattung durch Auskragungen |
 | `trombewand/` | Trombe- und Solarwand (Animation, Speicherverzögerung) |
 | `waermetauscher/` | Kreuzwärmetauscher mit Kondensat |
+| `schichtspeicher/` | Schichtspeicher: Zapfen, Laden, Schichtenlanze, Verwirbelung |
+| `solarspeicher/` | Solaranlage mit bivalentem Speicher einen Tag in Ettelbruck, Auslegung |
 | `lehrer/` | Aufgabenblätter mit Lösungen (verschlüsselt, Passwort) |
 
-Gemeinsam genutzt: `assets/base.css` (Design), `assets/core.js` (Zahlen, MathJax, Aufgaben prüfen), `assets/bauphysik.js` (Materialien aus der ENTEC-Formelsammlung 26/27 und Bauphysik-Rechnungen).
+Gemeinsam genutzt: `assets/base.css` (Design), `assets/core.js` (Zahlen, MathJax, Aufgaben prüfen), `assets/speicher.js` (Speichermodell in Wasserschichten), `assets/bauphysik.js` (Materialien aus der ENTEC-Formelsammlung 26/27 und Bauphysik-Rechnungen).
 
 ## Neues Modul hinzufügen
 1. Ordner mit `index.html` anlegen (Kopf und Fuß von einem bestehenden Modul übernehmen).
 2. In `index.html` (Startseite) im Array `KAP` einen Eintrag ergänzen.
 
 ## Lehrkraft-Bereich
-Der Inhalt liegt nur verschlüsselt als `lehrer/lehrer.enc.json` im Repository (AES-256-GCM, Schlüssel per PBKDF2-SHA256 aus dem Passwort). Die unverschlüsselte Quelle bleibt lokal; Passwort setzen oder ändern: lokal Doppelklick auf `Lehrer-Passwort setzen.command` (Dialogfenster, lädt die verschlüsselte Datei automatisch hoch; Skript `werkzeug/passwort_setzen.py`).
+Der Inhalt liegt nur verschlüsselt als `lehrer/lehrer.enc.json` im Repository (AES-256-GCM, Schlüssel per PBKDF2-SHA256 aus dem Passwort). Die unverschlüsselte Quelle bleibt lokal; neu verschlüsseln mit `python3 werkzeug/verschluesseln.py`.
