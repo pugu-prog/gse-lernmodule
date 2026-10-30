@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>U-Wert-Rechner · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>U-Wert-Rechner Außenwand</h1>
+      <p class="sub">Wandaufbau von innen nach außen mit Materialwerten aus der ENTEC-Formelsammlung: U-Wert, Temperaturverlauf, Taupunkt, Glaser-Verfahren, Phasenverschiebung, Wärmespeicher und Wärmeverlust, dazu ein Lernpfad und Übungen mit Selbstkontrolle.</p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Bereiche">
+      <button role="tab" id="t-rechner" data-tab="rechner" aria-selected="true">Rechner</button>
+      <button role="tab" id="t-lernen" data-tab="lernen" aria-selected="false">Lernen</button>
+      <button role="tab" id="t-ueben" data-tab="ueben" aria-selected="false">Üben</button>
+            <button role="tab" id="t-materialien" data-tab="materialien" aria-selected="false">Materialien</button>
+    </nav>
+  </header>
+
+  <!-- ===================== RECHNER ===================== -->
+  <div class="tabpane" id="p-rechner" role="tabpanel" aria-labelledby="t-rechner">
+    <div class="vbar">
+      <div class="seg" role="group" aria-label="Variante">
+        <button id="vA" aria-pressed="true">Variante A</button><button id="vB" aria-pressed="false">Variante B</button>
+      </div>
+      <input id="vname" aria-label="Name der Variante">
+      <button id="vcopy">Aktuelle Variante in die andere kopieren</button>
+      <button id="vmirror">Andere = gespiegelt (Innendämmung)</button>
+    </div>
+
+    <div class="tiles" aria-live="polite">
+      <div class="result"><span class="lab">U-Wert \(U\)</span><span class="val" id="uval">–</span><span class="unit">\(\mathrm{W/(m^2\,K)}\)</span><span class="pill" id="pill"></span><span class="pill" id="rpill"></span></div>
+      <div class="result"><span class="lab">Taupunkt Raumluft \(\theta_s\)</span><span class="val dp" id="tsval">–</span><span class="unit">\(^\circ\mathrm{C}\)</span><span class="pill" id="dpill"></span></div>
+      <div class="result"><span class="lab">Tauwasser \(M_c\) (Glaser)</span><span class="val dp" id="gval">–</span><span class="unit" id="gunit">kg/m²</span><span class="pill" id="gpill"></span></div>
+      <div class="result"><span class="lab">Phasenverschiebung \(\varphi\)</span><span class="val" id="phval">–</span><span class="unit">\(\mathrm{h}\)</span><span class="pill neu" id="tavpill"></span></div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Schichtaufbau</h2>
+        <div class="tbl">
+          <table id="layers">
+            <thead><tr><th></th><th>Nr.</th><th>Material</th><th class="r">\(d\) in \(\mathrm{cm}\)</th><th class="r">\(\lambda\) in \(\mathrm{\frac{W}{m\,K}}\)</th><th class="r">\(\rho\) in \(\mathrm{\frac{kg}{m^3}}\)</th><th class="r">\(c\) in \(\mathrm{\frac{J}{kg\,K}}\)</th><th class="r">\(\mu\)</th><th class="r">\(R\) in \(\mathrm{\frac{m^2K}{W}}\)</th><th class="r">\(s_d\) in \(\mathrm{m}\)</th><th></th></tr></thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+        <div class="row">
+          <select id="preset" aria-label="Material auswählen" style="width:auto;flex:1;min-width:200px"></select>
+          <button class="primary" id="add">Schicht hinzufügen</button>
+          <button id="reset">Aufbau aus Skizze laden</button>
+          <button id="mufav" title="Innen der Dämmung kleinstes μ, ab der Dämmung größtes μ (Fußnote 1 der Formelsammlung)">μ ungünstig setzen</button>
+        </div>
+        <div class="params">
+          <label>Innentemperatur \(\theta_i\) in °C<input type="number" id="ti" value="20" step="1"></label>
+          <label>Außentemperatur \(\theta_e\) in °C<input type="number" id="te" value="-10" step="1"></label>
+          <label>Richtung Wärmestrom<select id="dir"><option value="hor" selected>horizontal (Wand)</option><option value="auf">aufwärts (Dach)</option><option value="ab">abwärts (Boden)</option></select></label>
+          <label>\(R_{si}\) in \(\mathrm{m^2K/W}\)<input type="number" id="rsi" value="0.13" step="0.01"></label>
+          <label>\(R_{se}\) in \(\mathrm{m^2K/W}\)<input type="number" id="rse" value="0.04" step="0.01"></label>
+          <label>Zielwert \(U_{max}\) in \(\mathrm{W/(m^2K)}\)<input type="number" id="umax" value="0.24" step="0.01"></label>
+          <label>Luftfeuchte innen \(\varphi_i\) in %<input type="number" id="phi" value="50" step="5" min="1" max="100"></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Querschnitt, Temperaturverlauf &amp; Taupunkt</h2>
+        <svg id="sec" viewBox="0 0 520 360" width="100%" role="img" aria-label="Maßstäblicher Wandquerschnitt mit Temperaturverlauf"></svg>
+        <div class="side"><span>← innen (warm)</span><span>außen (kalt) →</span></div>
+        <div class="legend"><span><i class="lg t"></i>Temperatur</span><span><i class="lg s"></i>Taupunkttemperatur \(\theta_s\)</span><span><i class="lg z"></i>Wandbereich kälter als \(\theta_s\)</span></div>
+        <p class="info" id="dpinfo"></p>
+      </section>
+    </div>
+
+    <section>
+      <h2>Rechenweg U-Wert, Temperaturen und Taupunkt</h2>
+      <div class="steps" id="steps"></div>
+    </section>
+
+    <section>
+      <h2>Tauwasser im Bauteil: Glaser-Verfahren</h2>
+      <div class="grid">
+        <div>
+          <svg id="gsvg" viewBox="0 0 520 330" width="100%" role="img" aria-label="Glaser-Diagramm: Dampfdruck über der diffusionsäquivalenten Luftschichtdicke"></svg>
+          <div class="legend"><span><i class="lg t"></i>Sättigungsdampfdruck \(p_s\)</span><span><i class="lg d"></i>Gerade \(p_i \to p_e\)</span><span><i class="lg p"></i>tatsächlicher Dampfdruck \(p\)</span><span><i class="lg z"></i>Tauwasserbereich</span></div>
+          <p class="info" id="ginfo"></p>
+        </div>
+        <div>
+          <div class="params" style="margin-top:0">
+            <fieldset><legend>Tauperiode</legend>
+              <div class="params" style="margin-top:4px">
+                <label>\(\theta_i\) in °C<input type="number" id="gti" value="20"></label>
+                <label>\(\varphi_i\) in %<input type="number" id="gphii" value="50"></label>
+                <label>\(\theta_e\) in °C<input type="number" id="gte" value="-5"></label>
+                <label>\(\varphi_e\) in %<input type="number" id="gphie" value="80"></label>
+                <label>Dauer \(t\) in d<input type="number" id="gtt" value="90"></label>
+              </div>
+            </fieldset>
+            <fieldset><legend>Verdunstungsperiode</legend>
+              <div class="params" style="margin-top:4px">
+                <label>\(\theta_i\) in °C<input type="number" id="eti" value="20"></label>
+                <label>\(\varphi_i\) in %<input type="number" id="ephii" value="50"></label>
+                <label>\(\theta_e\) in °C<input type="number" id="ete" value="12"></label>
+                <label>\(\varphi_e\) in %<input type="number" id="ephie" value="70"></label>
+                <label>Dauer \(t\) in d<input type="number" id="etd" value="90"></label>
+              </div>
+            </fieldset>
+            <label>\(R_{si}\) Feuchteschutz in \(\mathrm{m^2K/W}\)<input type="number" id="grsi" value="0.25" step="0.01"></label>
+            <label>\(R_{se}\) in \(\mathrm{m^2K/W}\)<input type="number" id="grse" value="0.04" step="0.01"></label>
+          </div>
+          <div class="row"><button id="gdin">Klima nach DIN 4108-3 setzen</button></div>
+          <dl class="kv" id="gkv"></dl>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid even">
+      <section>
+        <h2>Wärmespeicher, TAV &amp; Phasenverschiebung</h2>
+        <svg id="dsvg" viewBox="0 0 520 230" width="100%" role="img" aria-label="Tagesgang der Oberflächentemperaturen außen und innen"></svg>
+        <div class="legend"><span><i class="lg t"></i>Oberfläche außen \(\theta_{se}\)</span><span><i class="lg p"></i>Oberfläche innen \(\theta_{si}\)</span><span><i class="lg d"></i>innen überhöht</span></div>
+        <dl class="kv" id="dkv"></dl>
+        <label class="fl" style="max-width:220px;margin-top:12px">\(\Delta T\) für Wärmespeicherung in K<input type="number" id="sdT" value="3" step="1"></label>
+        <div class="tbl" style="margin-top:10px"><table class="mini" id="dtab"></table></div>
+      </section>
+      <section>
+        <h2>Wärmeverlust durch die Wand</h2>
+        <div class="params" style="margin-top:0">
+          <label>Wandfläche \(A\) in m²<input type="number" id="area" value="120" step="5"></label>
+          <label>Klima Ettelbruck<select id="gsel"><option value="3170" selected>Mittel 2016–2025</option><option value="3383">Mittel 1996–2025</option><option value="3914">kalter Winter 2010</option><option value="2950">milder Winter 2020</option></select></label>
+          <label>Heizgradtage \(G_{20/15}\) in Kd/a<input type="number" id="gtz" value="3170" step="10"></label>
+          <label>Energiepreis in €/kWh<input type="number" id="price" value="0.12" step="0.01"></label>
+        </div>
+        <div class="steps" id="lsteps" style="margin-top:12px"></div>
+        <h3 style="margin-top:16px">Heizgradtage in Ettelbruck pro Monat</h3>
+        <svg id="gdsvg" viewBox="0 0 520 190" width="100%" role="img" aria-label="Heizgradtage Ettelbruck pro Monat, Mittel 2016 bis 2025"></svg>
+        <p class="info">Die Heizgradtage zeigen, wie kalt ein Jahr zum Heizen ist. An jedem Heiztag (Tagesmittel \(\theta_m < 15\,^\circ\mathrm{C}\)) wird die Differenz zur Raumtemperatur gezählt und über das Jahr aufsummiert:</p>
+        <div class="formel">\[G_{20/15} = \sum_{\text{Heiztage}} \left(20\,^\circ\mathrm{C} - \theta_m\right)\quad\text{z. B. } \theta_m = -2\,^\circ\mathrm{C} \Rightarrow 22\,\mathrm{Kd}\]</div>
+        <p class="note">Ettelbruck (49,85° N, 6,10° O, 203 m): \(G_{20/15} = 3170\,\mathrm{Kd/a}\) im Mittel 2016–2025 bei 247 Heiztagen, \(3383\,\mathrm{Kd/a}\) im Mittel 1996–2025. Die Winter sind milder geworden. Berechnet aus Tagesmitteltemperaturen der ERA5-Reanalyse (Open-Meteo). \(\theta_i\) und \(\theta_e\) für \(\dot Q\) kommen aus dem Schichtaufbau oben.</p>
+      </section>
+    </div>
+
+    <section>
+      <h2>Vergleich Variante A und B</h2>
+      <div class="tbl"><table class="cmp" id="cmp" style="min-width:520px"></table></div>
+    </section>
+
+    <section>
+      <h2>Erklärung der Größen und Formeln</h2>
+      <div class="expl">
+        <div><h3>\(\lambda\) – Wärmeleitfähigkeit <span class="u">W/(m·K)</span></h3><p>Materialeigenschaft: Wie viel Wärme fließt durch 1 m² eines 1 m dicken Stoffs, wenn zwischen beiden Seiten 1 K Temperaturunterschied liegt. Kleines λ bedeutet gute Dämmung. Die Wärmeleitgruppe (WLG) ist λ in mW/(m·K): WLG 040 → λ = 0,040.</p></div>
+        <div><h3>\(R = \dfrac{d}{\lambda}\) – Wärmedurchlasswiderstand <span class="u">m²K/W</span></h3><p>Je dicker eine Schicht und je kleiner λ, desto größer ihr Widerstand. d in Meter einsetzen: 15 cm = 0,15 m. Der Kehrwert \(\Lambda = \lambda/d\) heißt Wärmedurchlasskoeffizient. Mindestwärmeschutz nach DIN 4108-2 für Außenwände: \(R \ge 1{,}20\).</p></div>
+        <div><h3>\(R_{si}\), \(R_{se}\) – Wärmeübergangswiderstände</h3><p>Übergang von der Luft auf die Oberfläche. Werte nach Richtung des Wärmestroms: aufwärts 0,10 / 0,04, horizontal 0,13 / 0,04, abwärts 0,17 / 0,04. Beim Feuchteschutz gelten andere Werte (Glaser: \(R_{si} = 0{,}25\)).</p></div>
+        <div><h3>\(R_T = R_{si} + \sum R_n + R_{se}\), \(U = 1/R_T\)</h3><p>Die Widerstände liegen in Reihe und werden addiert. U gibt an, wie viel Watt pro m² Wand bei 1 K Unterschied verloren gehen.</p></div>
+        <div><h3>\(\theta_n = \theta_i - q \cdot (R_{si} + R_1 + \dots + R_n)\)</h3><p>Der Wärmestrom \(q = U \cdot \Delta\theta\) ist in jeder Schicht gleich. Der Temperaturabfall einer Schicht ist proportional zu ihrem Widerstand: \(R_{Schicht}/\Delta T_{Schicht} = R_T/\Delta T_{ges}\).</p></div>
+        <div><h3>\(\mu\) und \(s_d = \mu \cdot d\) <span class="u">m</span></h3><p>μ sagt, wie viel mal stärker ein Stoff den Wasserdampf bremst als eine gleich dicke ruhende Luftschicht. \(s_d\) ist die Dicke einer Luftschicht mit gleichem Widerstand. Bei Spannen den für die Konstruktion ungünstigeren Wert nehmen: innen klein, außen groß.</p></div>
+        <div><h3>Glaser-Verfahren (DIN 4108-3)</h3><p>Über der \(s_d\)-Achse werden der Sättigungsdampfdruck \(p_s\) und die Gerade vom Innen- zum Außendampfdruck gezeichnet. Schneidet die Gerade die \(p_s\)-Kurve, fällt Tauwasser aus. Die tatsächliche Dampfdrucklinie läuft dann als Tangente an die \(p_s\)-Kurve. Diffusionsstrom \(g = \Delta p / (1{,}5\cdot 10^6 \cdot s_d)\) in kg/(m²·h).</p></div>
+        <div><h3>Wärmespeicher \(Q' = m' \cdot c \cdot \Delta T\), \(m' = d \cdot \rho\)</h3><p>Speichern dürfen nur Schichten mit \(\lambda \ge 0{,}1\) W/(m·K) zwischen Raum und Dämmung. Eine Außendämmung lässt das Mauerwerk als Speicher wirken, eine Innendämmung nicht.</p></div>
+        <div><h3>TAV und Phasenverschiebung φ</h3><p>TAV = Amplitude der inneren Oberflächentemperatur ÷ Amplitude der äußeren. φ ist die Zeit, die das Tagesmaximum von außen nach innen braucht. Gerechnet nach EN ISO 13786 mit der Eindringtiefe \(\delta = \sqrt{\lambda T/(\pi \rho c)}\), T = 24 h.</p></div>
+        <div><h3>\(\dot Q = U \cdot A \cdot \Delta\theta\) und \(Q_a = U \cdot A \cdot G \cdot 24\)</h3><p>\(\dot Q\) ist die Verlustleistung in W bei Auslegungstemperaturen. Die Heizgradtage \(G_{20/15} = \sum (20\,^\circ\mathrm{C} - \theta_m)\) über alle Heiztage messen, wie kalt das Jahr ist; Ettelbruck: \(3170\,\mathrm{Kd/a}\). Mal 24 h ergibt Wh, geteilt durch 1000 kWh/a.</p></div>
+      </div>
+      <p class="note">Materialwerte: ENTEC-Formelsammlung 26/27, Tabelle 5.3. Kalkputz λ = 1,0 laut Formelsammlung (die Skizze nannte keine WLG). Die Formelsammlung nennt für Rse horizontal 0,043, das Skript 0,04; hier ist 0,04 eingestellt. Zielwert 0,24 = GEG-Wert für Außenwände bei Sanierung, frei änderbar.</p>
+      <p class="note"><b>Zum Taupunkt:</b> Das vereinfachte Taupunktverfahren nimmt an, dass die Raumluft mit vollem Dampfdruck bis in die Wand gelangt. Ob dort wirklich Tauwasser ausfällt, zeigt erst das Glaser-Verfahren mit den μ-Werten. Eine Taupunktebene in der Außendämmung ist bei einem WDVS normal: Das dampfdichtere Mauerwerk liegt innen, die diffusionsoffene Mineralwolle außen.</p>
+    </section>
+  </div>
+
+  <!-- ===================== LERNEN ===================== -->
+  <div class="tabpane" id="p-lernen" role="tabpanel" aria-labelledby="t-lernen" hidden>
+    <section>
+      <div class="row" style="margin-top:0;justify-content:space-between">
+        <div><h2 style="margin:0">Lernpfad Bauphysik der Außenwand</h2><p class="c" style="margin:2px 0 0">Schritt für Schritt mit Erklärung, Formel und eigener Rechnung. Gerechnet wird mit der Wand <b id="lwname"></b>.</p></div>
+        <button id="lreload">Wand aus dem Rechner übernehmen</button>
+      </div>
+      <div class="progress"><i id="lprog"></i></div>
+      <div class="learn">
+        <ol class="stepnav" id="lnav"></ol>
+        <div class="card" id="lcard"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== ÜBEN ===================== -->
+  <div class="tabpane" id="p-ueben" role="tabpanel" aria-labelledby="t-ueben" hidden>
+    <section>
+      <h2>Übungswand</h2>
+      <div class="row" style="margin-top:0">
+        <label class="fl" style="width:160px">Niveau<select id="ulevel"><option value="1">1 · Grundlagen</option><option value="2" selected>2 · mit Dämmung</option><option value="3">3 · Profi</option></select></label>
+        <button class="primary" id="unew">Neue Wand würfeln</button>
+        <button id="uload">Wand im Rechner öffnen (Variante B)</button>
+        <span class="c" id="useed"></span>
+      </div>
+      <div class="chips" id="utopics" style="margin-top:12px"></div>
+      <div id="uwall" style="margin-top:14px"></div>
+    </section>
+    <section>
+      <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Aufgaben</h2><span class="badge" id="uscore"></span></div>
+      <div id="utasks"></div>
+    </section>
+  </div>
+
+  <!-- ===================== MATERIALIEN ===================== -->
+  <div class="tabpane" id="p-materialien" role="tabpanel" aria-labelledby="t-materialien" hidden>
+    <section>
+      <div class="row" style="margin-top:0">
+        <input id="msearch" placeholder="Material suchen, z. B. Ziegel, WLG 035, Holz" aria-label="Material suchen" style="flex:1;min-width:200px;width:auto">
+        <select id="mkat" aria-label="Kategorie" style="width:auto"></select>
+        <span class="c" id="mcount"></span>
+      </div>
+      <div class="tbl" style="margin-top:12px">
+        <table style="min-width:760px">
+          <thead><tr><th></th><th>Material</th><th class="r">\(\rho\) in \(\mathrm{\frac{kg}{m^3}}\)</th><th class="r">\(\lambda\) in \(\mathrm{\frac{W}{m\,K}}\)</th><th class="r">\(\mu\)</th><th class="r">\(c\) in \(\mathrm{\frac{J}{kg\,K}}\)</th><th>Quelle</th><th></th></tr></thead>
+          <tbody id="mtb"></tbody>
+        </table>
+      </div>
+      <p class="note">Quelle FS = ENTEC-Formelsammlung, Tabelle 5.3. Spannen bei \(\rho\) und \(\lambda\): Im Rechner wird ρ als Mittelwert und λ als ungünstiger (größerer) Wert eingesetzt. Alle Werte lassen sich in der Schichttabelle ändern.</p>
+    </section>
+  </div>
+</div>
+
+
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bauphysik.js"></script>
+<script>
+let db=null,canWrite=false;   // eigene Materialien kommen hier aus bauphysik.js
+/* ---------- Zustand ---------- */
+const V={A:{name:"Außendämmung (Skizze)",L:skizze()},B:{name:"Bestand ohne Dämmung",L:bestand()}};
+let cur="A";const L=()=>V[cur].L;
+function readP(){return{ti:val("ti"),te:val("te"),rsi:val("rsi"),rse:val("rse"),umax:val("umax"),phi:val("phi")/100,
+  g:{ti:val("gti"),phii:val("gphii")/100,te:val("gte"),phie:val("gphie")/100,rsi:val("grsi"),rse:val("grse"),t:val("gtt")*24,eti:val("eti"),ephii:val("ephii")/100,ete:val("ete"),ephie:val("ephie")/100,et:val("etd")*24},
+  dT:val("sdT"),A:val("area"),G:val("gtz"),price:val("price")}}
+
+/* ---------- Rechner: Tabelle ---------- */
+const sel=$("preset");
+function fillPresets(){
+  const keep=sel.value;sel.innerHTML="";const groups={};
+  allMats().forEach(m=>{(groups[m.kat]=groups[m.kat]||[]).push(m)});
+  Object.keys(KAT).forEach(k=>{if(!groups[k])return;const g=document.createElement("optgroup");g.label=KAT[k].n;
+    groups[k].forEach(m=>{const o=document.createElement("option");o.value=m.key;o.textContent=`${m.n} (λ ${fmt(m.l.v,3)})`;g.appendChild(o)});sel.appendChild(g)});
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;else sel.value=findMat("Mineralwolle WLG 035").key;
+}
+function renderTable(){
+  const tb=$("tb");tb.innerHTML="";const Ls=L();
+  const fixRow=(t,r)=>{const tr=document.createElement("tr");tr.className="fix";tr.innerHTML=`<td></td><td></td><td>${t}</td><td colspan="5"></td><td class="r num" data-fix="${r}"></td><td colspan="2"></td>`;return tr};
+  tb.appendChild(fixRow("Wärmeübergang innen \\(R_{si}\\)","si"));
+  Ls.forEach((s,i)=>{
+    const tr=document.createElement("tr");
+    const mu=s.muLo===s.muHi?(s.muLo>=1e5?"dampfdicht":""):`Spanne ${fmt(s.muLo,0)}–${fmt(s.muHi,0)}`;
+    tr.innerHTML=`<td><span class="sw" style="background:${s.col}"></span></td><td class="num">${i+1}</td>
+      <td style="min-width:170px"><input id="n${i}" value="${esc(s.n)}" aria-label="Material Schicht ${i+1}"></td>
+      <td style="width:70px"><input type="number" id="d${i}" value="${s.d}" step="0.5" min="0" aria-label="Dicke Schicht ${i+1}"></td>
+      <td style="width:80px"><input type="number" id="l${i}" value="${s.l}" step="0.001" min="0.001" aria-label="Lambda Schicht ${i+1}"></td>
+      <td style="width:80px"><input type="number" id="rho${i}" value="${s.rho}" step="10" min="0" aria-label="Rohdichte Schicht ${i+1}"></td>
+      <td style="width:76px"><input type="number" id="c${i}" value="${s.c}" step="10" min="0" aria-label="Wärmekapazität Schicht ${i+1}" title="${s.cAss?"c nicht in der Formelsammlung, 1000 angenommen":""}"></td>
+      <td style="width:76px"><input type="number" id="mu${i}" value="${s.mu}" step="1" min="0" aria-label="My Schicht ${i+1}" title="${mu}"></td>
+      <td class="r num" id="r${i}"></td><td class="r num" id="sd${i}"></td>
+      <td style="white-space:nowrap"><button class="icon" data-up="${i}" aria-label="Nach innen">↑</button> <button class="icon" data-del="${i}" aria-label="Entfernen">×</button></td>`;
+    tb.appendChild(tr);
+    const bind=(id,f)=>tr.querySelector("#"+id+i).oninput=e=>{f(e.target.value);update()};
+    bind("n",v=>s.n=v);bind("d",v=>s.d=parseFloat(v));bind("l",v=>s.l=parseFloat(v));bind("rho",v=>s.rho=parseFloat(v));bind("c",v=>{s.c=parseFloat(v);s.cAss=false});bind("mu",v=>s.mu=parseFloat(v));
+  });
+  tb.appendChild(fixRow("Wärmeübergang außen \\(R_{se}\\)","se"));
+  tb.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{Ls.splice(+b.dataset.del,1);renderTable()});
+  tb.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.up;if(i>0){[Ls[i-1],Ls[i]]=[Ls[i],Ls[i-1]];renderTable()}});
+  $("vname").value=V[cur].name;
+  update();typeset($("tb"));
+}
+
+/* ---------- Rechner: Ausgabe ---------- */
+function update(){
+  const P=readP(),Ls=L(),r=compute(Ls,P);
+  Ls.forEach((s,i)=>{const c=$("r"+i);if(c)c.textContent=fmt(r.R[i],3);const e=$("sd"+i);if(e)e.textContent=r.sd[i]>=1000?fmt(r.sd[i],0):fmt(r.sd[i],2)});
+  document.querySelector('[data-fix="si"]').textContent=fmt(P.rsi,2);
+  document.querySelector('[data-fix="se"]').textContent=fmt(P.rse,2);
+  $("uval").textContent=fmt(r.U,3);
+  const pill=$("pill");
+  if(Number.isFinite(r.U)&&Number.isFinite(P.umax)){const ok=r.U<=P.umax;pill.className="pill "+(ok?"ok":"bad");pill.innerHTML=ok?`\\(U \\le ${n_(P.umax,2)}\\) erfüllt`:`\\(U > ${n_(P.umax,2)}\\) nicht erfüllt`}else pill.textContent="";
+  const rp=$("rpill"),rok=r.Rl>=1.2;rp.className="pill "+(rok?"ok":"bad");rp.innerHTML=`\\(R ${rok?"\\ge":"<"} 1{,}20\\) Mindestwärmeschutz`;
+  // Rechenweg
+  let h=`<p class="hd">1 · Wärmeübergang innen (Tabellenwert, Wärmestrom ${$("dir").selectedOptions[0].text})</p>`;
+  h+=M(`R_{si} = ${n_(P.rsi,2)}${uR}`);
+  h+=`<p class="hd">2 · Widerstand jeder Schicht (d in Meter einsetzen)</p>`;
+  Ls.forEach((s,i)=>{const k=i+1;h+=M(`R_{${k}} = \\frac{d_{${k}}}{\\lambda_{${k}}} = \\frac{${n_(s.d/100,3)}\\,\\mathrm{m}}{${n_(s.l,3)}${uL}} = \\mathbf{${n_(r.R[i],3)}}${uR}`,`${esc(s.n)}, ${fmt(s.d,1)} cm`)});
+  h+=M(`R = R_1 + \\dots + R_{${Ls.length}} = ${n_(r.Rl,3)}${uR} ${r.Rl>=1.2?"\\ge":"<"} 1{,}20${uR}`,rok?"Mindestwärmeschutz DIN 4108-2 erfüllt":"Mindestwärmeschutz DIN 4108-2 nicht erfüllt");
+  h+=`<p class="hd">3 · Wärmeübergang außen (Tabellenwert)</p>`+M(`R_{se} = ${n_(P.rse,2)}${uR}`);
+  h+=`<p class="hd">4 · Gesamtwiderstand: alle Widerstände in Reihe addieren</p>`;
+  h+=M(`R_T = ${["R_{si}",...Ls.map((_,i)=>`R_{${i+1}}`),"R_{se}"].join(" + ")}`);
+  h+=M(`R_T = ${[n_(P.rsi,2),...r.R.map(x=>n_(x,3)),n_(P.rse,2)].join(" + ")} = \\mathbf{${n_(r.RT,3)}}${uR}`);
+  h+=`<p class="hd">5 · Wärmedurchgangskoeffizient</p>`;
+  h+=`<div class="tot">${M(`U = \\frac{1}{R_T} = \\frac{1}{${n_(r.RT,3)}${uR}} = \\mathbf{${n_(r.U,3)}}${uU}`)}</div>`;
+  h+=`<p class="hd">6 · Wärmestrom und Temperaturen (für das Diagramm)</p>`;
+  h+=M(`q = U \\cdot (\\theta_i - \\theta_e) = ${n_(r.U,3)}${uU} \\cdot (${n_(P.ti,0)} - ${sg(P.te)})\\,\\mathrm{K} = \\mathbf{${n_(r.q,2)}}${uQ}`);
+  h+=M(`\\theta_{si} = \\theta_i - q \\cdot R_{si} = ${n_(P.ti,1)} - ${n_(r.q,2)} \\cdot ${n_(P.rsi,2)} = \\mathbf{${n_(r.T[1],1)}}${sC}`,"Oberfläche innen");
+  Ls.forEach((s,i)=>{const k=i+1,p=i===0?"si":i;h+=M(`\\theta_{${k}} = \\theta_{${p}} - q \\cdot R_{${k}} = ${n_(r.T[i+1],1)} - ${n_(r.q,2)} \\cdot ${n_(r.R[i],3)} = \\mathbf{${n_(r.T[i+2],1)}}${sC}`,k===Ls.length?"Oberfläche außen":`Grenzfläche ${k}|${k+1}`)});
+  h+=`<p class="hd">7 · Taupunkttemperatur der Raumluft (Magnus-Formel)</p>`;
+  h+=M(`p_s(\\theta_i) = 610{,}5\\,\\mathrm{Pa}\\cdot e^{\\frac{17{,}269\\,\\cdot\\,${n_(P.ti,1)}}{237{,}3\\,+\\,${n_(P.ti,1)}}} = ${n_(r.psi,0)}\\,\\mathrm{Pa}`,"Sättigungsdampfdruck bei Raumtemperatur");
+  h+=M(`p = \\varphi_i \\cdot p_s(\\theta_i) = ${n_(P.phi,2)} \\cdot ${n_(r.psi,0)}\\,\\mathrm{Pa} = ${n_(r.pv,0)}\\,\\mathrm{Pa}`,"vorhandener Wasserdampfdruck");
+  h+=M(r.pv>=610.5
+    ?`\\theta_s = \\frac{237{,}3 \\cdot \\ln\\left(\\frac{p}{610{,}5}\\right)}{17{,}269 - \\ln\\left(\\frac{p}{610{,}5}\\right)} = \\frac{237{,}3 \\cdot ${n_(r.lnr,4)}}{17{,}269 - ${n_(r.lnr,4)}} = \\mathbf{${n_(r.ts,1)}}${sC}`
+    :`\\theta_s = \\frac{265{,}5 \\cdot \\ln\\left(\\frac{p}{610{,}5}\\right)}{21{,}875 - \\ln\\left(\\frac{p}{610{,}5}\\right)} = \\frac{265{,}5 \\cdot (${n_(r.lnr,4)})}{21{,}875 - (${n_(r.lnr,4)})} = \\mathbf{${n_(r.ts,1)}}${sC}`,"Taupunkttemperatur");
+  h+=`<p class="hd">8 · Lage der Taupunktebene in der Wand</p>`;
+  const w=r.where;
+  if(w&&w.layer>0){const i=w.layer-1,a=r.T[i+1],b=r.T[i+2];
+    h+=M(`x = d_{${w.layer}} \\cdot \\frac{\\theta_{\\text{ein}} - \\theta_s}{\\theta_{\\text{ein}} - \\theta_{\\text{aus}}} = ${n_(Ls[i].d,1)}\\,\\mathrm{cm} \\cdot \\frac{${n_(a,1)} - ${n_(r.ts,1)}}{${n_(a,1)} - (${n_(b,1)})} = \\mathbf{${n_(w.into,1)}}\\,\\mathrm{cm}`,`in Schicht ${w.layer} (${esc(Ls[i].n)}), ${fmt(w.depth,1)} cm von der Innenoberfläche`);}
+  else if(w)h+=`<p class="c">θ<sub>si</sub> ≤ θ<sub>s</sub>: Tauwasser schon an der inneren Oberfläche.</p>`;
+  else h+=`<p class="c">Die Wand wird nirgends kälter als θ<sub>s</sub>: keine Taupunktebene im Bauteil.</p>`;
+  $("tsval").textContent=fmt(r.ts,1);
+  const dp=$("dpill"),surfOk=r.T[1]>r.ts;dp.className="pill "+(surfOk?"ok":"bad");dp.innerHTML=surfOk?`\\(\\theta_{si} = ${n_(r.T[1],1)}\\,^\\circ\\mathrm{C} > \\theta_s\\)`:"Tauwasser an Oberfläche";
+  $("dpinfo").innerHTML=w&&w.layer>0
+    ?`Bei \\(\\varphi_i = ${n_(P.phi*100,0)}\\,\\%\\) und \\(\\theta_i = ${n_(P.ti,0)}\\,^\\circ\\mathrm{C}\\) kondensiert Wasserdampf unter \\(\\theta_s = ${n_(r.ts,1)}\\,^\\circ\\mathrm{C}\\). Diese Temperatur wird in Schicht ${w.layer} (${esc(Ls[w.layer-1].n)}) erreicht, \\(x = ${n_(w.into,1)}\\,\\mathrm{cm}\\) tief in dieser Schicht bzw. \\(${n_(w.depth,1)}\\,\\mathrm{cm}\\) von der Innenoberfläche.`
+    :w?`Die innere Oberfläche (\\(\\theta_{si} = ${n_(r.T[1],1)}\\,^\\circ\\mathrm{C}\\)) ist kälter als der Taupunkt (\\(\\theta_s = ${n_(r.ts,1)}\\,^\\circ\\mathrm{C}\\)): Tauwasser an der Wandoberfläche.`
+    :`Die Wand bleibt überall wärmer als \\(\\theta_s = ${n_(r.ts,1)}\\,^\\circ\\mathrm{C}\\).`;
+  $("steps").innerHTML=h;
+  drawSection(Ls,r,P);renderGlaser(Ls,r.gl);renderDyn(Ls,r,P);renderLoss(r,P);renderCompare(P);
+  typeset(["steps","dpinfo","pill","rpill","dpill","gpill","gunit","ginfo","gkv","tavpill","dkv","dtab","cmp","lsteps"].map($));
+}
+
+function drawSection(Ls,r,P){
+  const T=r.T,ts=r.ts,where=r.where;
+  const svg=$("sec");const W=520,H=360,x0=50,x1=490,yt=30,yb=270;
+  const tot=Ls.reduce((a,s)=>a+(s.d>0?s.d:0),0)||1;
+  const tmin=Math.min(...T,P.te,ts),tmax=Math.max(...T,P.ti,ts);
+  const ty=v=>yb-(v-tmin)/((tmax-tmin)||1)*(yb-yt);
+  const defs=`<defs>
+   <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#000" stroke-opacity=".22" stroke-width="2"/></pattern>
+   <pattern id="cross" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8M8 0L0 8" stroke="#000" stroke-opacity=".2"/></pattern>
+   <pattern id="dots" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".8" fill="#000" fill-opacity=".25"/></pattern>
+   <pattern id="wave" width="16" height="12" patternUnits="userSpaceOnUse"><path d="M0 6 Q4 0 8 6 T16 6" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="1.4"/></pattern></defs>`;
+  let g="",x=x0;const xs=[x0];
+  g+=`<rect x="0" y="${yt}" width="${x0}" height="${yb-yt}" fill="var(--warm)" fill-opacity=".08"/>`;
+  g+=`<rect x="${x1}" y="${yt}" width="${W-x1}" height="${yb-yt}" fill="var(--cold)" fill-opacity=".08"/>`;
+  Ls.forEach((s,i)=>{
+    const w=Math.max(0,s.d)/tot*(x1-x0);
+    g+=`<rect x="${x}" y="${yt}" width="${w}" height="${yb-yt}" fill="${s.col}"/>`;
+    if(s.p!=="none")g+=`<rect x="${x}" y="${yt}" width="${w}" height="${yb-yt}" fill="url(#${s.p})"/>`;
+    g+=`<line x1="${x}" y1="${yt}" x2="${x}" y2="${yb}" stroke="var(--ink)" stroke-opacity=".5"/>`;
+    g+=`<text x="${x+w/2}" y="${yt-10}" text-anchor="middle" font-size="12" fill="var(--ink)">${i+1}</text>`;
+    g+=`<text x="${x+w/2}" y="${yb+16}" text-anchor="middle" font-size="10" fill="var(--muted)">${w>22?fmt(s.d,0)+" cm":""}</text>`;
+    x+=w;xs.push(x);
+  });
+  g+=`<line x1="${x1}" y1="${yt}" x2="${x1}" y2="${yb}" stroke="var(--ink)" stroke-opacity=".5"/>`;
+  const pts=[[4,ty(T[0])],[x0,ty(T[1])]];xs.slice(1).forEach((xx,i)=>pts.push([xx,ty(T[i+2])]));pts.push([W-4,ty(P.te)]);
+  const yts=ty(ts);let xc=null;
+  if(where){xc=where.layer===0?x0:x0+where.depth/tot*(x1-x0);g+=`<rect x="${xc}" y="${yt}" width="${x1-xc}" height="${yb-yt}" fill="var(--cold)" fill-opacity=".2"/>`;}
+  g+=`<line x1="0" y1="${yts}" x2="${W}" y2="${yts}" stroke="var(--cold)" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+  g+=`<text x="${x0+4}" y="${yts+15}" font-size="11" fill="var(--cold)" paint-order="stroke" stroke="var(--panel)" stroke-width="3">θs = ${fmt(ts,1)} °C</text>`;
+  g+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--bad)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  if(xc!==null){
+    g+=`<line x1="${xc}" y1="${yt}" x2="${xc}" y2="${yb}" stroke="var(--cold)" stroke-width="1.6"/>`;
+    g+=`<circle cx="${xc}" cy="${yts}" r="6" fill="var(--cold)" stroke="var(--panel)" stroke-width="2"/>`;
+    g+=`<text x="${Math.min(Math.max(xc,90),430)}" y="${yb+30}" text-anchor="middle" font-size="11" fill="var(--cold)" font-weight="500">Taupunktebene ${fmt(where.depth||0,1)} cm</text>`;}
+  pts.slice(1,-1).forEach((p,i)=>{
+    g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--panel)" stroke="var(--bad)" stroke-width="2"/>`;
+    const above=p[1]>yt+30;
+    g+=`<text x="${p[0]+(i===0?6:0)}" y="${above?p[1]-9:p[1]+18}" text-anchor="${i===0?"start":"middle"}" font-size="11" fill="var(--ink)" paint-order="stroke" stroke="var(--panel)" stroke-width="3">${fmt(T[i+1],1)}°</text>`;
+  });
+  g+=`<text x="6" y="${ty(T[0])-8}" font-size="11" fill="var(--warm)">${fmt(T[0],0)}°C</text>`;
+  g+=`<text x="${W-6}" y="${ty(P.te)-8}" text-anchor="end" font-size="11" fill="var(--cold)">${fmt(P.te,0)}°C</text>`;
+  g+=`<text x="${(x0+x1)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">Gesamtdicke ${fmt(tot,1)} cm · Breiten maßstäblich</text>`;
+  svg.innerHTML=defs+g;
+}
+
+function renderGlaser(Ls,g){
+  const svg=$("gsvg"),W=520,H=330,x0=58,x1=500,yt=26,yb=280;
+  const sdT=g.sdT||1,ymax=Math.max(g.pi,...g.S.map(p=>p.y),100)*1.08;
+  const X=x=>x0+x/sdT*(x1-x0),Y=y=>yb-y/ymax*(yb-yt);
+  let s="";
+  const step=ymax>2400?500:ymax>1200?250:100;
+  for(let v=0;v<=ymax;v+=step){s+=`<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${x0-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${fmt(v,0)}</text>`}
+  g.segs.forEach((sg_,i)=>{const a=X(sg_.sd0),b=X(sg_.sd1);
+    s+=`<rect x="${a}" y="${yt}" width="${Math.max(0,b-a)}" height="${yb-yt}" fill="${Ls[i].col}" fill-opacity=".35"/>`;
+    s+=`<line x1="${a}" x2="${a}" y1="${yt}" y2="${yb}" stroke="var(--ink)" stroke-opacity=".35"/>`;
+    if(b-a>12)s+=`<text x="${(a+b)/2}" y="${yt-8}" text-anchor="middle" font-size="11" fill="var(--ink)">${i+1}</text>`;});
+  s+=`<line x1="${x1}" x2="${x1}" y1="${yt}" y2="${yb}" stroke="var(--ink)" stroke-opacity=".35"/>`;
+  if(g.cond)s+=`<rect x="${X(g.x1)-1}" y="${yt}" width="${Math.max(2,X(g.x2)-X(g.x1)+2)}" height="${yb-yt}" fill="var(--cold)" fill-opacity=".25"/>`;
+  s+=`<polyline points="${g.S.map(p=>X(p.x)+","+Y(p.y)).join(" ")}" fill="none" stroke="var(--bad)" stroke-width="2.4"/>`;
+  s+=`<line x1="${X(0)}" y1="${Y(g.pi)}" x2="${X(sdT)}" y2="${Y(g.pe)}" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+  s+=`<polyline points="${g.hull.map(p=>X(p.x)+","+Y(p.y)).join(" ")}" fill="none" stroke="var(--cold)" stroke-width="2.6"/>`;
+  s+=`<text x="${x0+4}" y="${Y(g.pi)-6}" font-size="11" fill="var(--cold)" paint-order="stroke" stroke="var(--panel)" stroke-width="3">pi = ${fmt(g.pi,0)} Pa</text>`;
+  s+=`<text x="${x1-4}" y="${Y(g.pe)-6}" text-anchor="end" font-size="11" fill="var(--cold)" paint-order="stroke" stroke="var(--panel)" stroke-width="3">pe = ${fmt(g.pe,0)} Pa</text>`;
+  s+=`<text x="${(x0+x1)/2}" y="${yb+20}" text-anchor="middle" font-size="11" fill="var(--muted)">diffusionsäquivalente Luftschichtdicke sd in m (gesamt ${fmt(g.sdT,2)} m)</text>`;
+  s+=`<text x="14" y="${(yt+yb)/2}" transform="rotate(-90 14 ${(yt+yb)/2})" text-anchor="middle" font-size="11" fill="var(--muted)">Dampfdruck p in Pa</text>`;
+  s+=`<text x="${x0}" y="${yb+36}" font-size="10" fill="var(--muted)">innen</text><text x="${x1}" y="${yb+36}" text-anchor="end" font-size="10" fill="var(--muted)">außen</text>`;
+  svg.innerHTML=s;
+  const gv=$("gval"),gp=$("gpill");
+  const K=(a,b)=>`<dt>\\(${a}\\)</dt><dd>\\(${b}\\)</dd>`;
+  let kv=K("p_i = \\varphi_i\\cdot p_s(\\theta_i)",`${n_(g.pi,0)}\\,\\mathrm{Pa}`)+K("p_e = \\varphi_e\\cdot p_s(\\theta_e)",`${n_(g.pe,0)}\\,\\mathrm{Pa}`)+K("s_{d,T} = \\sum \\mu_n d_n",`${n_(g.sdT,2)}\\,\\mathrm{m}`);
+  if(g.surf){gv.textContent="Oberfl.";$("gunit").innerHTML="";gp.className="pill bad";gp.textContent="Tauwasser an der Innenoberfläche";
+    $("ginfo").innerHTML=`Der Dampfdruck der Raumluft \\(p_i\\) ist größer als der Sättigungsdampfdruck an der Innenoberfläche (\\(\\theta_{si} = ${n_(g.tsi,1)}\\,^\\circ\\mathrm{C}\\)). Es bildet sich Tauwasser auf der Wand.`;}
+  else if(!g.cond){gv.textContent="0";$("gunit").innerHTML="\\(\\mathrm{kg/m^2}\\)";gp.className="pill ok";gp.textContent="kein Tauwasser";
+    $("ginfo").innerHTML="Die Gerade \\(p_i \\to p_e\\) bleibt überall unter der Sättigungskurve \\(p_s\\). Im Bauteil fällt kein Tauwasser aus.";}
+  else{const okM=g.Mc<=1.0,okE=g.Mev>=g.Mc;
+    gv.textContent=fmt(g.Mc,3);$("gunit").innerHTML="\\(\\mathrm{kg/m^2}\\)";gp.className="pill "+(okM&&okE?"ok":"bad");
+    gp.innerHTML=okM&&okE?"zulässig: \\(M_c \\le 1{,}0\\) und \\(M_{ev} \\ge M_c\\)":!okM?"zu viel: \\(M_c > 1{,}0\\,\\mathrm{kg/m^2}\\)":"\\(M_{ev} < M_c\\): verdunstet nicht";
+    const zn=g.li===g.lj?`in Schicht ${g.li+1} (${esc(Ls[g.li].n)})`:`von Schicht ${g.li+1} bis ${g.lj+1}`;
+    $("ginfo").innerHTML=`Die Gerade schneidet die Sättigungskurve: Tauwasser fällt ${zn} aus. In der Tauperiode sammeln sich \\(M_c = ${n_(g.Mc*1000,0)}\\,\\mathrm{g/m^2}\\), in der Verdunstungsperiode können \\(M_{ev} = ${n_(g.Mev*1000,0)}\\,\\mathrm{g/m^2}\\) austrocknen.`;
+    kv+=K("g_{ein} = \\frac{p_i - p_{s,c}}{1{,}5\\cdot10^6\\cdot s_{d,i}}",`${n_(g.gin*1000,3)}\\,\\mathrm{g/(m^2h)}`)+K("g_{aus} = \\frac{p_{s,c} - p_e}{1{,}5\\cdot10^6\\cdot s_{d,e}}",`${n_(g.gout*1000,3)}\\,\\mathrm{g/(m^2h)}`)
+      +K("M_c = (g_{ein} - g_{aus})\\cdot t",`${n_(g.Mc,3)}\\,\\mathrm{kg/m^2} ${g.Mc<=1?"\\le":">"} 1{,}0`)+K("M_{ev} = g_{ev}\\cdot t",`${n_(g.Mev,3)}\\,\\mathrm{kg/m^2} ${g.Mev>=g.Mc?"\\ge":"<"} M_c`);}
+  $("gkv").innerHTML=kv;
+}
+
+function renderDyn(Ls,r,P){
+  const svg=$("dsvg"),W=520,H=230,x0=44,x1=505,yt=18,yb=190;
+  const dy=r.dy;if(!dy){svg.innerHTML="";$("dkv").innerHTML="";$("phval").textContent="–";return}
+  $("phval").textContent=fmt(dy.ph,1);$("tavpill").innerHTML=`\\(\\mathrm{TAV} = ${n_(dy.tav,dy.tav<0.01?4:3)}\\), \\(\\nu = ${n_(dy.nu,0)}\\)`;
+  const mean=22,amp=10,tMax=14,ain=amp*dy.tav;
+  let mag=1;for(const f of[1,2,5,10,20,50,100,200,500,1000,2000,5000]){if(ain*f<=amp*0.7)mag=f}
+  const X=t=>x0+t/24*(x1-x0),Y=v=>yb-(v-(mean-amp-2))/((2*amp+4))*(yb-yt);
+  let s="";
+  for(let v=mean-amp;v<=mean+amp;v+=5)s+=`<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${x0-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}°</text>`;
+  for(let t=0;t<=24;t+=6)s+=`<text x="${X(t)}" y="${yb+16}" text-anchor="middle" font-size="10" fill="var(--muted)">${t} h</text>`;
+  const curve=(a,shift)=>{let p=[];for(let i=0;i<=96;i++){const t=i/4;p.push(X(t)+","+Y(mean+a*Math.cos(2*Math.PI*(t-shift)/24)))}return p.join(" ")};
+  const tIn=(tMax+dy.ph)%24;
+  s+=`<polyline points="${curve(amp,tMax)}" fill="none" stroke="var(--bad)" stroke-width="2.4"/>`;
+  s+=`<polyline points="${curve(ain,tIn)}" fill="none" stroke="var(--cold)" stroke-width="2.4"/>`;
+  if(mag>1)s+=`<polyline points="${curve(ain*mag,tIn)}" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/><text x="${x1}" y="${Y(mean-ain*mag)+14}" text-anchor="end" font-size="10" fill="var(--muted)">innen ${mag}-fach überhöht</text>`;
+  const yA=Y(mean+amp)-4;
+  s+=`<line x1="${X(tMax)}" x2="${X(tMax)}" y1="${yt}" y2="${yb}" stroke="var(--bad)" stroke-dasharray="2 3"/><line x1="${X(tIn)}" x2="${X(tIn)}" y1="${yt}" y2="${yb}" stroke="var(--cold)" stroke-dasharray="2 3"/>`;
+  if(tIn>tMax)s+=`<line x1="${X(tMax)}" x2="${X(tIn)}" y1="${yA+12}" y2="${yA+12}" stroke="var(--ink)" marker-end="url(#ar)"/><text x="${(X(tMax)+X(tIn))/2}" y="${yA+8}" text-anchor="middle" font-size="11" fill="var(--ink)">φ = ${fmt(dy.ph,1)} h</text>`;
+  else s+=`<text x="${X(tIn)+4}" y="${yA+8}" font-size="11" fill="var(--ink)">φ = ${fmt(dy.ph,1)} h (Maximum am Folgetag)</text>`;
+  svg.innerHTML=`<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--ink)"/></marker></defs>`+s;
+  const K=(a,b)=>`<dt>${a}</dt><dd>\\(${b}\\)</dd>`;
+  $("dkv").innerHTML=K("Phasenverschiebung \\(\\varphi\\)",`${n_(dy.ph,1)}\\,\\mathrm{h}`)+K("\\(\\mathrm{TAV} = A_{\\theta,si}/A_{\\theta,se}\\)",n_(dy.tav,4))+K("Amplitudendämpfung \\(\\nu = 1/\\mathrm{TAV}\\)",n_(dy.nu,0))
+    +K("flächenbezogene Masse \\(m' = \\sum d\\cdot\\rho\\)",`${n_(r.mTot,0)}\\,\\mathrm{kg/m^2}`)+K("speicherwirksam (\\(\\lambda \\ge 0{,}1\\), innen der Dämmung)",`${n_(r.m.slice(0,r.kSw).reduce((a,b)=>a+b,0),0)}\\,\\mathrm{kg/m^2}`)
+    +K(`\\(Q' = \\sum m'\\cdot c\\cdot\\Delta T\\), \\(\\Delta T = ${n_(P.dT,0)}\\,\\mathrm{K}\\)`,`${n_(r.QsW/1000,0)}\\,\\mathrm{kJ/m^2} = ${n_(r.QsW/3.6e6,3)}\\,\\mathrm{kWh/m^2}`);
+  let t=`<thead><tr><th>Nr.</th><th>Material</th><th class="r">\\(m' = \\rho\\cdot d\\) in \\(\\mathrm{kg/m^2}\\)</th><th class="r">\\(Q'\\) in \\(\\mathrm{kJ/m^2}\\)</th><th class="r">\\(\\delta\\) in cm</th><th class="r">\\(d/\\delta\\)</th></tr></thead><tbody>`;
+  Ls.forEach((s,i)=>{const la=dy.lay[i];t+=`<tr${i<r.kSw?"":` style="color:var(--muted)"`}><td class="num">${i+1}</td><td>${esc(s.n)}${i<r.kSw?"":" <span class=\"c\">(nicht speicherwirksam)</span>"}</td><td class="r num">${fmt(r.m[i],1)}</td><td class="r num">${fmt(r.Qs[i]/1000,0)}</td><td class="r num">${la?fmt(la.delta*100,1):"–"}</td><td class="r num">${la?fmt(la.xi,2):"–"}</td></tr>`});
+  $("dtab").innerHTML=t+"</tbody>";
+}
+
+const GD_MON=[537,448,421,306,165,32,8,12,95,247,409,491]; // Ettelbruck, Mittel 2016–2025, Kd
+function drawGd(){
+  const svg=$("gdsvg"),x0=40,x1=510,yt=14,yb=160,mx=600,bw=(x1-x0)/12;
+  const Y=v=>yb-v/mx*(yb-yt);let s="";
+  for(let v=0;v<=mx;v+=200)s+=`<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${x0-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;
+  "JFMAMJJASOND".split("").forEach((m,i)=>{const v=GD_MON[i],x=x0+i*bw+4;
+    s+=`<rect x="${x}" y="${Y(v)}" width="${bw-8}" height="${yb-Y(v)}" rx="2" fill="var(--cold)" fill-opacity="${.35+.6*v/mx}"/>`;
+    s+=`<text x="${x+(bw-8)/2}" y="${Y(v)-4}" text-anchor="middle" font-size="10" fill="var(--ink)">${v}</text><text x="${x+(bw-8)/2}" y="${yb+14}" text-anchor="middle" font-size="10" fill="var(--muted)">${m}</text>`});
+  s+=`<text x="${x0}" y="${yb+28}" font-size="10" fill="var(--muted)">Kd pro Monat · Summe 3170 Kd/a</text>`;
+  svg.innerHTML=s;
+}
+function renderLoss(r,P){
+  let h=M(`\\dot Q = U \\cdot A \\cdot (\\theta_i-\\theta_e) = ${n_(r.U,3)}${uU} \\cdot ${n_(P.A,0)}\\,\\mathrm{m^2} \\cdot ${n_(P.ti-P.te,0)}\\,\\mathrm{K} = \\mathbf{${n_(r.Qdot,0)}}\\,\\mathrm{W}`,"Verlustleistung bei Auslegungstemperaturen");
+  h+=M(`Q_a = U \\cdot A \\cdot G \\cdot 24\\,\\tfrac{\\mathrm{h}}{\\mathrm{d}} = ${n_(r.U,3)} \\cdot ${n_(P.A,0)} \\cdot ${n_(P.G,0)} \\cdot 24 = ${n_(r.Qa*1000,0)}\\,\\mathrm{Wh/a} = \\mathbf{${n_(r.Qa,0)}}\\,\\mathrm{kWh/a}`,"Jahreswärmeverlust");
+  h+=M(`K = Q_a \\cdot \\text{Preis} = ${n_(r.Qa,0)}\\,\\mathrm{kWh/a} \\cdot ${n_(P.price,2)}\\,\\text{€/kWh} = \\mathbf{${n_(r.cost,0)}}\\,\\text{€/a}`,"Heizkosten für diese Wand");
+  $("lsteps").innerHTML=h;
+}
+
+function renderCompare(P){
+  const ra=compute(V.A.L,P),rb=compute(V.B.L,P);
+  const g=x=>x.gl.surf?"an Oberfläche":x.gl.cond?fmt(x.gl.Mc*1000,0)+" g/m²":"keins";
+  const tp=(x,Ls)=>x.where?(x.where.layer?`Schicht ${x.where.layer}, ${fmt(x.where.depth,1)} cm`:"Oberfläche"):"keine";
+  const rows=[["\\(U\\) in \\(\\mathrm{W/(m^2K)}\\)",ra.U,rb.U,3,"min"],["\\(R_T\\) in \\(\\mathrm{m^2K/W}\\)",ra.RT,rb.RT,3,"max"],["\\(\\theta_{si}\\) Oberfläche innen in °C",ra.T[1],rb.T[1],1,"max"],
+    ["Verlustleistung \\(\\dot Q\\) in W",ra.Qdot,rb.Qdot,0,"min"],["Jahresverlust \\(Q_a\\) in kWh/a",ra.Qa,rb.Qa,0,"min"],["Heizkosten in €/a",ra.cost,rb.cost,0,"min"],
+    ["Phasenverschiebung \\(\\varphi\\) in h",ra.dy?.ph,rb.dy?.ph,1,"max"],["\\(\\mathrm{TAV}\\)",ra.dy?.tav,rb.dy?.tav,4,"min"],["\\(m'\\) gesamt in \\(\\mathrm{kg/m^2}\\)",ra.mTot,rb.mTot,0,""],["\\(Q'\\) speicherwirksam in \\(\\mathrm{kJ/m^2}\\)",ra.QsW/1000,rb.QsW/1000,0,"max"],["Dicke \\(d\\) in cm",V.A.L.reduce((a,s)=>a+s.d,0),V.B.L.reduce((a,s)=>a+s.d,0),1,""]];
+  let h=`<thead><tr><th></th><th class="r">A · ${esc(V.A.name)}</th><th class="r">B · ${esc(V.B.name)}</th><th class="r">Differenz B − A</th></tr></thead><tbody>`;
+  rows.forEach(([n,a,b,d,best])=>{const ba=best==="min"?a<b:best==="max"?a>b:false,bb=best==="min"?b<a:best==="max"?b>a:false;
+    h+=`<tr><td>${n}</td><td class="r num${ba?" best":""}">${fmt(a,d)}</td><td class="r num${bb?" best":""}">${fmt(b,d)}</td><td class="r num">${fmt(b-a,d)}</td></tr>`});
+  h+=`<tr><td>Taupunktebene</td><td class="r">${tp(ra)}</td><td class="r">${tp(rb)}</td><td></td></tr><tr><td>Tauwasser \\(M_c\\) (Glaser)</td><td class="r">${g(ra)}</td><td class="r">${g(rb)}</td><td></td></tr>`;
+  const sav=rb.Qa-ra.Qa;
+  h+=`<tr><td colspan="4" class="c" style="color:var(--muted)">${sav>0?`Variante A spart gegenüber B ${fmt(sav,0)} kWh/a (${fmt(rb.cost-ra.cost,0)} €/a).`:sav<0?`Variante B spart gegenüber A ${fmt(-sav,0)} kWh/a (${fmt(ra.cost-rb.cost,0)} €/a).`:"Beide Varianten verlieren gleich viel Wärme."}</td></tr>`;
+  $("cmp").innerHTML=h+"</tbody>";
+}
+
+/* ---------- Rechner: Bedienung ---------- */
+$("gsel").onchange=()=>{$("gtz").value=$("gsel").value;update()};
+["ti","te","rsi","rse","umax","phi","gti","gphii","gte","gphie","gtt","eti","ephii","ete","ephie","etd","grsi","grse","sdT","area","gtz","price"].forEach(id=>$(id).oninput=update);
+$("dir").onchange=()=>{const v={auf:[.10,.04],hor:[.13,.04],ab:[.17,.04]}[$("dir").value];$("rsi").value=v[0];$("rse").value=v[1];update()};
+$("gdin").onclick=()=>{Object.entries({gti:20,gphii:50,gte:-5,gphie:80,gtt:90,eti:20,ephii:50,ete:12,ephie:70,etd:90,grsi:.25,grse:.04}).forEach(([k,v])=>$(k).value=v);update()};
+$("add").onclick=()=>{const m=allMats().find(x=>x.key===sel.value);if(!m)return;L().push(layerFrom(m,m.n.startsWith("Luftschicht")?4:m.kat==="putz"?1.5:m.kat==="daemm"?12:10));renderTable()};
+$("reset").onclick=()=>{V[cur].L=skizze();renderTable()};
+$("mufav").onclick=()=>{unfavMu(L());renderTable()};
+function setVar(k){cur=k;$("vA").setAttribute("aria-pressed",k==="A");$("vB").setAttribute("aria-pressed",k==="B");renderTable()}
+$("vA").onclick=()=>setVar("A");$("vB").onclick=()=>setVar("B");
+$("vname").oninput=e=>{V[cur].name=e.target.value;renderCompare(readP())};
+const other=()=>cur==="A"?"B":"A";
+$("vcopy").onclick=()=>{const o=other();V[o].L=L().map(s=>({...s}));V[o].name=V[cur].name+" (Kopie)";setVar(o)};
+$("vmirror").onclick=()=>{const o=other();V[o].L=L().map(s=>({...s})).reverse();V[o].name=V[cur].name+" gespiegelt";unfavMu(V[o].L);setVar(o)};
+
+
+/* ---------- Üben ---------- */
+let UW=null,uSeed=store.get("uwr-useed",Math.floor(Math.random()*1e6));
+const uTop=store.get("uwr-utop",{R:1,U:1,T:1,TP:1,G:0,S:0,V:1,D:0});
+function renderUeben(){
+  UW=genWall(uSeed,+$("ulevel").value);
+  $("useed").textContent=`Wand Nr. ${uSeed}`;
+  $("uwall").innerHTML=wallTable(UW,{rho:uTop.S||uTop.D,mu:uTop.G});
+  const tasks=genTasks(UW,uTop,mulberry32(uSeed+7)).filter(t=>t.kind!=="text"||uTop.D);
+  const ids=tasks.map((_,i)=>"ut"+i);const ch="abcdefghijklmnopqrstuvwxyz";
+  $("utasks").innerHTML=tasks.length?tasks.map((t,i)=>taskHTML(t,ids[i],ch[i]+")")).join(""):`<p class="info">Wähle oben mindestens ein Thema.</p>`;
+  const nNum=tasks.filter(t=>t.kind!=="text").length;
+  const sc=n=>$("uscore").textContent=`${n} von ${nNum} richtig`;sc(0);
+  bindTasks($("utasks"),tasks,ids,sc);
+  typeset($("p-ueben"));
+}
+$("unew").onclick=()=>{uSeed=Math.floor(Math.random()*1e6);store.set("uwr-useed",uSeed);renderUeben()};
+$("ulevel").onchange=renderUeben;
+$("uload").onclick=()=>{V.B={name:`Übungswand ${uSeed}`,L:UW.L.map(s=>({...s}))};["ti","te"].forEach(k=>$(k).value=UW.P[k]);$("phi").value=UW.P.phi*100;showTab("rechner");setVar("B")};
+
+
+/* ---------- Lernen ---------- */
+let LW=null,lIdx=store.get("uwr-lidx",0);const lDone=store.get("uwr-ldone",{});
+function lw(){return LW}
+function learnSteps(){
+  const W=LW,Ls=W.L,P=W.P,r=compute(Ls,P);
+  const fl=(lab,ans,unit,o={})=>({kind:"num",q:lab,ans,unit,tol:.02,...o});
+  return[
+    {t:"Wärmeleitfähigkeit \\(\\lambda\\) verstehen",ex:`<p>Jeder Baustoff leitet Wärme unterschiedlich gut. Die <b>Wärmeleitfähigkeit λ</b> gibt an, wie viel Watt durch einen Würfel von 1 m Kantenlänge fließen, wenn innen und außen 1 K Unterschied herrscht. Metalle leiten sehr gut (Kupfer 380), Dämmstoffe sehr schlecht (0,02 bis 0,1). Je mehr ruhende Luft in Poren eingeschlossen ist, desto kleiner ist λ.</p><p>Die Werte stehen in der Formelsammlung, Tabelle 5.3. Bei Dämmstoffen steckt λ in der Wärmeleitgruppe: WLG 035 bedeutet λ = 0,035 W/(m·K).</p>`,
+      f:String.raw`\text{WLG } 035 \;\Rightarrow\; \lambda = 0{,}035\,\frac{\mathrm{W}}{\mathrm{m\,K}}`,
+      tasks:[{kind:"sel",q:"Welche Schicht deiner Wand dämmt am besten (kleinstes λ)?",opts:Ls.map((s,i)=>`Schicht ${i+1}: ${s.n}`),ans:Ls.reduce((k,s,i)=>s.l<Ls[k].l?i:k,0)},
+        {kind:"sel",q:"Was passiert mit λ, wenn ein Dämmstoff nass wird?",opts:["λ wird kleiner","λ bleibt gleich","λ wird größer"],ans:2}],
+      hint:"Wasser leitet Wärme etwa 25-mal besser als ruhende Luft (0,64 statt 0,025)."},
+    {t:"Dicke in Meter umrechnen",ex:`<p>In alle Formeln wird die Dicke <b>in Meter</b> eingesetzt, weil λ in W/(m·K) angegeben ist. Ein häufiger Fehler ist, cm direkt einzusetzen: Dann wird R hundertmal zu groß.</p>`,
+      f:String.raw`d\,[\mathrm{m}] = \frac{d\,[\mathrm{cm}]}{100}`,tasks:Ls.map((s,i)=>fl(`\\(d_{${i+1}}\\): ${esc(s.n)}, \\(${n_(s.d,1)}\\,\\mathrm{cm}\\)`,s.d/100,"\\(\\mathrm{m}\\)",{atol:.0005})),hint:"Komma um zwei Stellen nach links: 32 cm = 0,32 m."},
+    {t:"Wärmedurchlasswiderstand \\(R\\) jeder Schicht",ex:`<p>Der <b>Wärmedurchlasswiderstand</b> beschreibt, wie stark eine Schicht den Wärmestrom bremst. Er wächst mit der Dicke und sinkt mit λ. Den Kehrwert \\(\\Lambda = \\lambda/d\\) nennt das Skript Wärmedurchlasskoeffizient.</p><p>Vergleiche am Ende: Welche Schicht liefert den größten Beitrag?</p>`,
+      f:String.raw`R = \frac{d}{\lambda}\quad\left[\frac{\mathrm{m}}{\mathrm{W/(m\,K)}} = \frac{\mathrm{m^2\,K}}{\mathrm{W}}\right]`,tasks:Ls.map((s,i)=>fl(`\\(R_{${i+1}} = \\frac{${n_(s.d/100,3)}\\,\\mathrm{m}}{${n_(s.l,3)}\\,\\mathrm{W/(m\\,K)}}\\) (${esc(s.n)})`,r.R[i],"\\(\\mathrm{m^2K/W}\\)")),hint:"Dicke in Meter durch λ teilen. Runde auf drei Nachkommastellen."},
+    {t:"Wärmeübergangswiderstände \\(R_{si}\\) und \\(R_{se}\\)",ex:`<p>Bevor die Wärme in die Wand gelangt, muss sie von der Raumluft auf die Oberfläche übergehen; außen gibt die Wand sie wieder an die Luft ab. Diese Übergänge haben einen eigenen Widerstand. Er hängt von der <b>Richtung des Wärmestroms</b> ab: Warme Luft steigt auf, deshalb ist der Übergang nach oben leichter (kleiner Widerstand).</p><p>Außen ist der Widerstand kleiner als innen, weil der Wind die Wärme schneller abführt.</p>`,
+      f:String.raw`\begin{array}{lccc} & \text{aufwärts} & \text{horizontal} & \text{abwärts}\\ R_{si} & 0{,}10 & 0{,}13 & 0{,}17\\ R_{se} & 0{,}04 & 0{,}04 & 0{,}04\end{array}`,
+      tasks:[fl("\\(R_{si}\\) für eine Außenwand",.13,"\\(\\mathrm{m^2K/W}\\)",{atol:.001}),fl("\\(R_{se}\\) für eine Außenwand",.04,"\\(\\mathrm{m^2K/W}\\)",{atol:.0035}),{kind:"sel",q:"Welche Richtung gilt für ein Dach im Winter?",opts:["aufwärts","horizontal","abwärts"],ans:0}],hint:"Eine Wand hat einen horizontalen Wärmestrom. Im Winter strömt die Wärme durch das Dach nach oben."},
+    {t:"Wärmedurchgangswiderstand \\(R_T\\)",ex:`<p>Die Wärme muss alle Widerstände nacheinander überwinden. Sie liegen in <b>Reihe</b> und werden addiert, wie elektrische Widerstände in einer Reihenschaltung.</p><p>Die Summe nur der Schichten, \\(R = \\sum R_n\\), muss für Außenwände mindestens 1,20 m²K/W betragen (Mindestwärmeschutz DIN 4108-2).</p>`,
+      f:String.raw`R_T = R_{si} + R_1 + R_2 + \dots + R_n + R_{se}`,tasks:[fl("Summe der Schichten \\(R = \\sum R_n\\)",r.Rl,"\\(\\mathrm{m^2K/W}\\)"),fl("\\(R_T\\)",r.RT,"\\(\\mathrm{m^2K/W}\\)"),{kind:"sel",q:"Ist der Mindestwärmeschutz R ≥ 1,20 erfüllt?",opts:["ja","nein"],ans:r.Rl>=1.2?0:1}],hint:`Addiere: ${fmt(P.rsi,2)} + Schichtwiderstände + ${fmt(P.rse,2)}.`},
+    {t:"U-Wert \\(U\\)",ex:`<p>Der <b>Wärmedurchgangskoeffizient U</b> ist der Kehrwert von \\(R_T\\). Er gibt an, wie viel Watt pro m² Wand verloren gehen, wenn innen und außen 1 K Unterschied herrscht. Kleiner U-Wert = gute Dämmung.</p><p>Richtwerte: ungedämmte Ziegelwand etwa 1,3 bis 1,8; GEG-Sanierung 0,24; Passivhaus unter 0,15 W/(m²K).</p>`,
+      f:String.raw`U = \frac{1}{R_T}\quad\left[\frac{\mathrm{W}}{\mathrm{m^2\,K}}\right]`,tasks:[fl("U-Wert",r.U,"\\(\\mathrm{W/(m^2K)}\\)"),{kind:"sel",q:"Erfüllt die Wand den Zielwert U ≤ 0,24 W/(m²K)?",opts:["ja","nein"],ans:r.U<=.24?0:1}],hint:"1 geteilt durch R_T."},
+    {t:"Wärmestrom \\(q\\)",ex:`<p>Der <b>Wärmestrom</b> pro m² ist in jeder Schicht gleich groß: Was innen hineinfließt, muss außen herauskommen (stationärer Zustand). Er hängt vom U-Wert und vom Temperaturunterschied ab.</p>`,
+      f:String.raw`q = U\cdot(\theta_i-\theta_e)\quad\left[\frac{\mathrm{W}}{\mathrm{m^2}}\right]`,tasks:[fl(`\\(q\\) bei \\(\\theta_i = ${n_(P.ti,0)}\\,^\\circ\\mathrm{C}\\) und \\(\\theta_e = ${n_(P.te,0)}\\,^\\circ\\mathrm{C}\\)`,r.q,"\\(\\mathrm{W/m^2}\\)")],hint:`Achtung bei negativen Außentemperaturen: ${fmt(P.ti,0)} − (${fmt(P.te,0)}) = ${fmt(P.ti-P.te,0)} K.`},
+    {t:"Oberflächentemperatur innen \\(\\theta_{si}\\)",ex:`<p>An jedem Widerstand fällt die Temperatur um \\(q\\cdot R\\) ab. Die <b>innere Oberflächentemperatur</b> ist wichtig für die Behaglichkeit und für Schimmel: Ist die Oberfläche zu kalt, kondensiert dort Wasser.</p>`,
+      f:String.raw`\theta_{si} = \theta_i - q\cdot R_{si} = \theta_i - \frac{\Delta T}{R_T}\cdot R_{si}`,tasks:[fl("\\(\\theta_{si}\\)",r.T[1],"\\(^\\circ\\mathrm{C}\\)",{atol:.15})],hint:`${fmt(P.ti,0)} − q · ${fmt(P.rsi,2)}`},
+    {t:"Temperaturen in den Grenzflächen",ex:`<p>Von innen nach außen wird jeweils der Abfall \\(q\\cdot R_n\\) abgezogen. Wo R groß ist (Dämmung), fällt die Temperatur stark ab. Prüfe am Ende: Nach der letzten Schicht muss \\(\\theta_{se}\\) knapp über \\(\\theta_e\\) liegen.</p>`,
+      f:String.raw`\theta_n = \theta_i - q\cdot(R_{si}+R_1+\dots+R_n),\qquad \frac{R_{Schicht}}{\Delta T_{Schicht}} = \frac{R_T}{\Delta T_{ges}}`,
+      tasks:Ls.map((s,i)=>fl(`\\(\\theta_{${i+1}}\\) nach Schicht ${i+1} (${esc(s.n)})`,r.T[i+2],"\\(^\\circ\\mathrm{C}\\)",{atol:.2})),hint:"Rechne Schicht für Schicht: vorige Temperatur minus q · R der Schicht."},
+    {t:"Taupunkttemperatur \\(\\theta_s\\) der Raumluft",ex:`<p>Luft kann je nach Temperatur nur eine bestimmte Menge Wasserdampf aufnehmen. Kühlt feuchte Luft ab, erreicht sie bei der <b>Taupunkttemperatur</b> 100 % relative Feuchte; darunter fällt Tauwasser aus. Den Taupunkt kannst du im h,x-Diagramm ablesen oder mit der Magnus-Formel berechnen.</p>`,
+      f:String.raw`p_s(\theta)=610{,}5\cdot e^{\frac{17{,}269\,\theta}{237{,}3+\theta}},\quad p=\varphi\cdot p_s(\theta_i),\quad \theta_s=\frac{237{,}3\,\ln(p/610{,}5)}{17{,}269-\ln(p/610{,}5)}`,
+      tasks:[fl(`\\(p_s(\\theta_i)\\) bei \\(\\theta_i = ${n_(P.ti,0)}\\,^\\circ\\mathrm{C}\\)`,r.psi,"\\(\\mathrm{Pa}\\)"),fl(`Dampfdruck \\(p\\) bei \\(\\varphi_i = ${n_(P.phi*100,0)}\\,\\%\\)`,r.pv,"\\(\\mathrm{Pa}\\)"),fl("Taupunkttemperatur \\(\\theta_s\\)",r.ts,"\\(^\\circ\\mathrm{C}\\)",{atol:.3})],hint:"Erst p_s, dann mit φ (als Dezimalzahl) multiplizieren, dann die Formel für θs."},
+    {t:"Lage der Taupunktebene",ex:`<p>Vergleiche die Temperaturen in der Wand mit \\(\\theta_s\\). Dort, wo die Wand kälter als \\(\\theta_s\\) wird, <b>könnte</b> Tauwasser ausfallen, wenn der Wasserdampf ungehindert dorthin gelangt. Ob das wirklich passiert, zeigt das Glaser-Verfahren.</p>`,
+      f:String.raw`x = d\cdot\frac{\theta_{\text{ein}}-\theta_s}{\theta_{\text{ein}}-\theta_{\text{aus}}}`,
+      tasks:[{kind:"sel",q:"In welcher Schicht liegt die Taupunktebene?",opts:[...Ls.map((s,i)=>`Schicht ${i+1}: ${s.n}`),"keine"],ans:r.where?(r.where.layer?r.where.layer-1:0):Ls.length},...(r.where&&r.where.layer?[fl("Abstand \\(x\\) in dieser Schicht (von ihrer Innenseite)",r.where.into,"\\(\\mathrm{cm}\\)",{atol:.2})]:[])],hint:"Suche die Schicht, deren Eintrittstemperatur über θs und Austrittstemperatur unter θs liegt."},
+    {t:"Diffusionswiderstand: \\(\\mu\\) und \\(s_d\\)",ex:`<p>Wasserdampf wandert (diffundiert) von der warmen, feuchten Innenseite nach außen. Die <b>Wasserdampfdiffusionswiderstandszahl μ</b> sagt, wie viel mal stärker ein Stoff den Dampf bremst als Luft. Mit der Dicke multipliziert ergibt sich der \\(s_d\\)-Wert: die Dicke einer Luftschicht mit gleichem Widerstand.</p><p>Faustregel: Innen dampfdichter, außen diffusionsoffener bauen, damit Feuchte nach außen austrocknen kann.</p>`,
+      f:String.raw`s_d = \mu\cdot d\quad[\mathrm{m}]`,tasks:[...Ls.map((s,i)=>fl(`\\(s_{d,${i+1}}\\) (${esc(s.n)}, \\(\\mu = ${n_(s.mu,0)}\\))`,r.sd[i],"\\(\\mathrm{m}\\)")),fl("gesamt \\(s_{d,T}\\)",r.sdT,"\\(\\mathrm{m}\\)")],hint:"μ mal Dicke in Meter."},
+    {t:"Glaser-Verfahren",ex:`<p>Im <b>Glaser-Diagramm</b> ist der Dampfdruck über der \\(s_d\\)-Achse aufgetragen. Die rote Kurve ist der Sättigungsdampfdruck \\(p_s\\) aus dem Temperaturverlauf. Die gerade Linie verbindet den Dampfdruck innen \\(p_i\\) mit dem außen \\(p_e\\).</p><p>Liegt die Gerade überall unter der Kurve, fällt kein Tauwasser aus. Schneidet sie die Kurve, kondensiert Wasser. DIN 4108-3 erlaubt höchstens 1,0 kg/m², und es muss im Sommer wieder verdunsten. Schau dir dazu das Diagramm im Rechner an.</p>`,
+      f:String.raw`g = \frac{\Delta p}{1{,}5\cdot10^{6}\cdot s_d}\;\left[\frac{\mathrm{kg}}{\mathrm{m^2\,h}}\right],\qquad M_c = (g_{ein}-g_{aus})\cdot t`,
+      tasks:[fl("\\(p_i\\) (Tauperiode: \\(20\\,^\\circ\\mathrm{C}\\), \\(50\\,\\%\\))",r.gl.pi,"\\(\\mathrm{Pa}\\)"),fl("\\(p_e\\) (\\(-5\\,^\\circ\\mathrm{C}\\), \\(80\\,\\%\\))",r.gl.pe,"\\(\\mathrm{Pa}\\)"),{kind:"sel",q:"Fällt Tauwasser im Bauteil aus?",opts:["ja","nein"],ans:r.gl.cond||r.gl.surf?0:1}],hint:"p = φ · p_s(θ). Für −5 °C gilt die Magnus-Formel mit 21,875 und 265,5."},
+    {t:"Wärmespeicher \\(Q'\\)",ex:`<p>Massive Bauteile speichern Wärme. Die speicherbare Menge pro m² hängt von der <b>flächenbezogenen Masse</b> m′, der spezifischen Wärmekapazität c und der Temperaturänderung ab. Es zählen nur Schichten mit λ ≥ 0,1 W/(m·K) zwischen Raum und Dämmung.</p>`,
+      f:String.raw`m' = d\cdot\rho,\qquad Q' = m'\cdot c\cdot\Delta T`,
+      tasks:[...Ls.slice(0,Math.max(1,r.kSw)).map((s,i)=>fl(`\\(m'_{${i+1}}\\) (${esc(s.n)}, \\(\\rho = ${n_(s.rho,0)}\\))`,r.m[i],"\\(\\mathrm{kg/m^2}\\)")),fl(`\\(Q'\\) speicherwirksam für \\(\\Delta T = ${n_(P.dT,0)}\\,\\mathrm{K}\\)`,r.QsW/1000,"\\(\\mathrm{kJ/m^2}\\)")],hint:"Masse in kg/m² mal c in J/(kg·K) mal ΔT; für kJ durch 1000 teilen."},
+    {t:"TAV und Phasenverschiebung \\(\\varphi\\)",ex:`<p>Im Sommer schwankt die Außentemperatur im Tagesverlauf. Eine speicherfähige Wand dämpft diese Schwankung (<b>TAV</b> = Amplitude innen ÷ Amplitude außen) und verzögert sie (<b>Phasenverschiebung</b> φ in Stunden). Gut sind ein kleiner TAV und φ von 10 bis 14 h: Die Tageshitze kommt dann erst nachts innen an, wenn man lüften kann.</p><p>Deine Wand: \\(\\varphi \\approx ${n_(r.dy.ph,1)}\\,\\mathrm{h}\\), \\(\\mathrm{TAV} \\approx ${n_(r.dy.tav,4)}\\).</p>`,
+      f:String.raw`\text{TAV} = \frac{A_{\theta,si}}{A_{\theta,se}},\qquad \delta = \sqrt{\frac{\lambda\,T}{\pi\,\rho\,c}}`,
+      tasks:[{kind:"sel",q:"Welche Lage der Dämmung ergibt die größere Phasenverschiebung bei gleichem Material?",opts:["Innendämmung","Außendämmung","kein Unterschied"],ans:1},{kind:"sel",q:"Was bedeutet ein TAV von 0,1?",opts:["Innen schwankt die Temperatur 10-mal so stark","Innen schwankt sie nur ein Zehntel so stark wie außen","Die Wärme braucht 0,1 h"],ans:1},{kind:"sel",q:"Welcher Baustoff verzögert bei gleicher Dicke stärker: Holzfaser oder EPS?",opts:["Holzfaser (große ρ·c)","EPS (kleines λ)"],ans:0}],hint:"Außendämmung: Das Mauerwerk liegt auf der Raumseite und wirkt als Speicher. Holzfaser hat ρ·c ≈ 200·2700, EPS nur ≈ 20·1500."},
+    {t:"Wärmeverlust und Kosten",ex:`<p>Mit dem U-Wert lässt sich der Wärmeverlust einer Wandfläche berechnen: als Leistung bei Auslegungstemperaturen und als Energie pro Jahr mit den <b>Heizgradtagen</b> \\(G\\).</p><p>Für jeden Heiztag (Tagesmittel unter \\(15\\,^\\circ\\mathrm{C}\\)) wird die Differenz zur Raumtemperatur \\(20\\,^\\circ\\mathrm{C}\\) gezählt: Ein Tag mit \\(-2\\,^\\circ\\mathrm{C}\\) bringt \\(22\\,\\mathrm{Kd}\\), ein Tag mit \\(10\\,^\\circ\\mathrm{C}\\) nur \\(10\\,\\mathrm{Kd}\\). In Ettelbruck kommen so im Mittel \\(3170\\,\\mathrm{Kd/a}\\) zusammen (2016–2025), am meisten im Januar mit \\(537\\,\\mathrm{Kd}\\).</p>`,
+      f:String.raw`\dot Q = U\cdot A\cdot\Delta\theta\;[\mathrm{W}],\qquad Q_a = \frac{U\cdot A\cdot G\cdot 24}{1000}\;[\mathrm{kWh/a}]`,
+      tasks:[fl(`\\(\\dot Q\\) für \\(A = ${n_(P.A,0)}\\,\\mathrm{m^2}\\)`,r.Qdot,"\\(\\mathrm{W}\\)"),fl(`\\(Q_a\\) mit \\(G = ${n_(P.G,0)}\\,\\mathrm{Kd/a}\\)`,r.Qa,"\\(\\mathrm{kWh/a}\\)")],hint:"24 h pro Tag; durch 1000 für kWh."}
+  ];
+}
+function renderLearn(){
+  if(!LW)loadLearnWall(false);
+  const S=learnSteps();lIdx=Math.max(0,Math.min(S.length-1,lIdx));
+  $("lwname").textContent=LW.name;
+  $("lnav").innerHTML=S.map((s,i)=>`<li><button data-i="${i}" ${i===lIdx?'aria-current="step"':""}><span class="no">${i+1}</span>${s.t}${lDone[s.t]?'<span class="ck" aria-label="erledigt">✓</span>':""}</button></li>`).join("");
+  $("lnav").querySelectorAll("button").forEach(b=>b.onclick=()=>{lIdx=+b.dataset.i;store.set("uwr-lidx",lIdx);renderLearn()});
+  const s=S[lIdx],ids=s.tasks.map((_,j)=>`ls${lIdx}-${j}`);
+  $("lcard").innerHTML=`<h3>Schritt ${lIdx+1} von ${S.length} · ${s.t}</h3>${s.ex}<div class="formel">\\[${s.f}\\]</div>
+    <details style="margin:6px 0 10px"><summary class="c" style="cursor:pointer">Deine Wand anzeigen</summary>${wallTable(LW,{rho:true,mu:true})}</details>
+    <h3 style="margin-top:14px">Probier es selbst</h3>${s.tasks.map((t,j)=>taskHTML({...t,sol:t.sol||solFor(t)},ids[j])).join("")}
+    <p class="info"><button id="lhint" class="icon" style="padding:3px 10px">Tipp</button> <span id="lhinttxt" hidden>${s.hint}</span></p>
+    <div class="row"><button id="lprev" ${lIdx===0?"disabled":""}>← Zurück</button><button class="primary" id="lnext" ${lIdx===S.length-1?"disabled":""}>Weiter →</button></div>`;
+  $("lhint").onclick=()=>$("lhinttxt").hidden=false;
+  $("lprev").onclick=()=>{lIdx--;store.set("uwr-lidx",lIdx);renderLearn()};
+  $("lnext").onclick=()=>{lIdx++;store.set("uwr-lidx",lIdx);renderLearn()};
+  bindTasks($("lcard"),s.tasks,ids,n=>{if(n===s.tasks.length&&!lDone[s.t]){lDone[s.t]=1;store.set("uwr-ldone",lDone);renderNavMarks(S)}});
+  renderNavMarks(S);typeset($("p-lernen"));
+}
+function renderNavMarks(S){const n=S.filter(s=>lDone[s.t]).length;$("lprog").style.width=(n/S.length*100)+"%";
+  $("lnav").querySelectorAll("button").forEach((b,i)=>{if(lDone[S[i].t]&&!b.querySelector(".ck"))b.insertAdjacentHTML("beforeend",'<span class="ck" aria-label="erledigt">✓</span>')})}
+function loadLearnWall(fromCalc){const src=fromCalc?V[cur]:V.A;const P=readP();LW={name:src.name,L:src.L.map(s=>({...s})),P}}
+$("lreload").onclick=()=>{loadLearnWall(true);renderLearn()};
+
+/* ---------- Materialien ---------- */
+function renderMats(){
+  const q=$("msearch").value.trim().toLowerCase(),k=$("mkat").value;
+  const list=allMats().filter(m=>(!k||m.kat===k)&&(!q||m.n.toLowerCase().includes(q)||(KAT[m.kat]?.n||"").toLowerCase().includes(q)));
+  const rr=(o,d)=>o.lo===o.hi?fmt(o.lo,d):`${fmt(o.lo,d)}–${fmt(o.hi,d)}`;
+  $("mcount").textContent=`${list.length} von ${allMats().length} Materialien`;
+  let last="";
+  $("mtb").innerHTML=list.map(m=>{let h="";if(m.kat!==last){last=m.kat;h=`<tr><td colspan="8" style="font-weight:600;padding-top:12px">${KAT[m.kat]?.n||m.kat}</td></tr>`}
+    const mu=m.mu.dicht?"dampfdicht":m.mu.none?"–":rr(m.mu,0);
+    return h+`<tr><td><span class="sw" style="background:${m.col}"></span></td><td>${esc(m.n)}</td><td class="r num">${rr(m.rho,m.rho.lo<10?3:0)}</td><td class="r num">${rr(m.l,3)}</td><td class="r num">${mu}</td><td class="r num">${m.c==null?"–":fmt(m.c,0)}</td><td><span class="src">${esc(m.src==="FS"?"FS 5.3":m.src)}</span></td><td style="white-space:nowrap"><button class="icon" data-take="${m.key}">In Rechner</button>${m.dbid&&canWrite?` <button class="icon" data-delm="${m.dbid}" aria-label="Löschen">×</button>`:""}</td></tr>`}).join("");
+  $("mtb").querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{const m=allMats().find(x=>x.key===b.dataset.take);L().push(layerFrom(m,m.kat==="daemm"?12:m.kat==="putz"?1.5:10));showTab("rechner");renderTable()});
+  $("mtb").querySelectorAll("[data-delm]").forEach(b=>b.onclick=async()=>{if(b.dataset.armed){try{await db.collection("materialien").doc(b.dataset.delm).delete()}catch(e){$("fmsg").textContent="Löschen nicht möglich."}}else{b.dataset.armed=1;b.textContent="Wirklich löschen?"}});
+}
+$("mkat").innerHTML=`<option value="">Alle Kategorien</option>`+Object.entries(KAT).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join("");
+$("msearch").oninput=renderMats;$("mkat").onchange=renderMats;
+
+/* ---------- Reiter ---------- */
+const TABS=["rechner","lernen","ueben","materialien"];
+function showTab(t){if(!TABS.includes(t)||$("t-"+t).hidden)t="rechner";
+  TABS.forEach(k=>{$("p-"+k).hidden=k!==t;$("t-"+k).setAttribute("aria-selected",k===t)});
+  if(t==="lernen")renderLearn();if(t==="ueben"&&!UW)renderUeben();if(t==="materialien")renderMats();
+  if(t!=="rechner")typeset($("p-"+t));
+  try{history.replaceState(null,"","#"+t)}catch(e){}}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* ---------- Start ---------- */
+fillPresets();renderTable();drawGd();
+chips($("utopics"),uTop,"uwr-utop",renderUeben);
+const startTab=(location.hash||"").slice(1);
+showTab(startTab);
+
+
+</script>
+</body>
+</html>

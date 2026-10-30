@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wärmewelle durch die Wand · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Wärmewelle durch die Wand</h1>
+      <p class="sub">Im Sommer schwankt die Außentemperatur zwischen Tag und Nacht. Die Simulation zeigt, wie diese Welle langsam durch die Wand wandert, dabei kleiner wird und verspätet innen ankommt.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Simulation</h2>
+    <div class="ctrls">
+      <label>Wandaufbau<select id="preset"></select></label>
+      <label>Tagesmittel außen \(\theta_m\) <output id="o-tm"></output><input type="range" id="tm" min="10" max="30" step="1" value="22"></label>
+      <label>Schwankung außen \(\pm\Delta\theta\) <output id="o-amp"></output><input type="range" id="amp" min="2" max="15" step="1" value="10"></label>
+      <label>Sonne auf der Fassade<select id="sun"><option value="0">keine Sonne</option><option value="0.3">helle Fassade (\(a = 0{,}3\))</option><option value="0.8" selected>dunkle Fassade (\(a = 0{,}8\))</option></select></label>
+      <label>Tempo <output id="o-sp"></output><input type="range" id="sp" min="0.5" max="8" step="0.5" value="2"></label>
+    </div>
+    <div class="playbar">
+      <button class="primary" id="play">Pause</button>
+      <button id="restart">Neu starten</button>
+      <span class="badge" id="clock">Tag 1 · 00:00</span>
+      <span class="c" id="layinfo"></span>
+    </div>
+    <canvas id="wall" width="1040" height="420" aria-label="Wandquerschnitt mit Temperaturfeld und Temperaturprofil"></canvas>
+    <canvas id="time" width="1040" height="300" aria-label="Oberflächentemperaturen außen und innen über die letzten 48 Stunden"></canvas>
+    <div class="legend"><span><i class="lg t"></i>Oberfläche außen \(\theta_{se}\) (linke Achse)</span><span><i class="lg p"></i>Oberfläche innen \(\theta_{si}\) (rechte Achse, vergrößert)</span><span><i class="lg d"></i>Außenluft \(\theta_e\)</span></div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Phasenverschiebung \(\varphi\) (Simulation)</span><span class="val" id="r-ph">–</span><span class="unit">\(\mathrm{h}\)</span><span class="pill neu" id="r-ph2"></span></div>
+      <div class="result"><span class="lab">TAV (Simulation)</span><span class="val" id="r-tav">–</span><span class="pill neu" id="r-tav2"></span></div>
+      <div class="result"><span class="lab">Schwankung innen \(\pm\Delta\theta_{si}\)</span><span class="val dp" id="r-ain">–</span><span class="unit">\(\mathrm{K}\)</span></div>
+    </div>
+    <p class="c">Die Werte der Simulation erscheinen nach einem vollen simulierten Tag. „Rechnung“ ist das Ergebnis nach EN ISO 13786 aus dem U-Wert-Rechner; kleine Abweichungen kommen von der Sonne und der Zeitauflösung.</p>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>Die Wand als Speicher</h3><p>Jede Schicht nimmt Wärme auf, bevor sie Wärme weitergibt. Wie viel sie aufnehmen kann, hängt von \(\rho \cdot c\) ab, wie schnell die Wärme weiterfließt, von \(\lambda\). Massive Schichten bremsen und speichern die Welle, Dämmstoffe bremsen nur.</p></div>
+      <div><h3>Eindringtiefe \(\delta = \sqrt{\dfrac{\lambda \cdot T}{\pi \cdot \rho \cdot c}}\)</h3><p>Nach der Tiefe \(\delta\) ist die Tagesschwankung auf etwa ein Drittel (\(1/e\)) gesunken und um \(T/(2\pi) \approx 3{,}8\) Stunden verspätet. Beton: \(\delta \approx 15\) cm, Holzfaser: \(\delta \approx 7\) cm, EPS: \(\delta \approx 20\) cm.</p></div>
+      <div><h3>TAV \(= \dfrac{\Delta\theta_{si}}{\Delta\theta_{se}}\)</h3><p>Das Temperatur-Amplitudenverhältnis vergleicht die Schwankung der inneren mit der äußeren Oberfläche. Ein TAV von 0,05 heißt: Von ±10 K außen bleiben innen ±0,5 K übrig. Kleiner TAV = gute Dämpfung.</p></div>
+      <div><h3>Phasenverschiebung \(\varphi\)</h3><p>Die Zeit vom Temperaturmaximum außen bis zum Maximum innen. Bei 10 bis 14 Stunden kommt die Hitze vom Nachmittag erst nachts innen an, wenn man lüften kann. Leichte Wände mit wenig Masse haben eine kleine Phasenverschiebung.</p></div>
+      <div><h3>Sonne auf der Fassade</h3><p>Eine besonnte Wand ist außen viel wärmer als die Luft. Man rechnet mit der Sonnenlufttemperatur \(\theta_{sol} = \theta_e + a \cdot I \cdot R_{se}\); dunkle Flächen absorbieren mehr (\(a\) groß).</p></div>
+      <div><h3>Wie die Simulation rechnet</h3><p>Die Wand ist in Scheiben von etwa 1 cm geteilt. In jedem Zeitschritt fließt zwischen zwei Scheiben \(q = \Delta\theta / R\), und jede Scheibe ändert ihre Temperatur um \(\Delta\theta = Q/(m \cdot c)\). Die Raumluft bleibt konstant auf dem Tagesmittel.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Materialwerte: ENTEC-Formelsammlung 26/27, Tabelle 5.3</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bauphysik.js"></script>
+<script>
+/* ---------- Wandaufbauten (innen → außen) ---------- */
+const P_=(n,list)=>({n,L:()=>list.map(([pre,rho,d])=>layerFrom(findMat(pre,rho),d))});
+const PRESETS=[
+  P_("Ziegel mit Außendämmung (WDVS)",[["Kalkputz",null,1.5],["Vollziegel",1800,24],["Mineralwolle WLG 035",null,14],["Kalkputz",null,1.5]]),
+  P_("Gleiche Wand mit Innendämmung",[["Gipskartonplatte",null,1.25],["Mineralwolle WLG 035",null,14],["Vollziegel",1800,24],["Kalkputz",null,1.5]]),
+  P_("Stahlbeton 30 cm ungedämmt",[["Gipsputz",null,1],["Stahlbeton",null,30],["Zementputz",null,1.5]]),
+  P_("Holzrahmen mit Holzfaser 22 cm",[["Gipskartonplatte",null,1.5],["Holzfaserdämmplatte WLG 040",null,22],["Kalkputz",null,1]]),
+  P_("Leichtbau mit EPS 20 cm",[["Gipskartonplatte",null,1.5],["Polystyrol expandiert (EPS) WLG 035",null,20],["Kalkputz",null,1]]),
+  P_("Porenbeton 36,5 cm",[["Gipsputz",null,1],["Porenbeton-Planstein",400,36.5],["Kalkputz",null,1.5]])
+];
+$("preset").innerHTML=PRESETS.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
+const RSI=.13,RSE=.04,DAY=86400,IMAX=500;
+
+/* ---------- Finite-Volumen-Simulation (1D, explizit) ---------- */
+let S=null;
+function build(){
+  const L=PRESETS[+$("preset").value].L(),cells=[];
+  L.forEach((s,li)=>{const d=s.d/100,n=Math.max(2,Math.round(d/0.01)),dx=d/n;for(let k=0;k<n;k++)cells.push({li,dx,l:s.l,C:s.rho*s.c*dx})});
+  const N=cells.length,K=new Float64Array(N+1);
+  K[0]=1/(RSI+cells[0].dx/(2*cells[0].l));
+  for(let i=1;i<N;i++)K[i]=1/(cells[i-1].dx/(2*cells[i-1].l)+cells[i].dx/(2*cells[i].l));
+  K[N]=1/(RSE+cells[N-1].dx/(2*cells[N-1].l));
+  let dt=Infinity;cells.forEach((c,i)=>dt=Math.min(dt,c.C/(K[i]+K[i+1])));dt*=0.45;
+  const tm=val("tm");
+  S={L,cells,K,N,dt,T:new Float64Array(N).fill(tm),t:0,hist:[],lastRec:-1,dyn:dyn(L,RSI,RSE),tot:L.reduce((a,s)=>a+s.d,0)};
+  // einschwingen: 6 simulierte Tage ohne Zeichnen
+  while(S.t<6*DAY)step();
+  S.hist=[];S.t0=S.t;
+  $("layinfo").innerHTML=`${N} Scheiben · Zeitschritt \\(\\Delta t = ${n_(dt,0)}\\,\\mathrm{s}\\)`;typeset($("layinfo"));
+}
+const sunI=h=>{const a=+$("sun").value;return a*IMAX*Math.max(0,Math.sin(Math.PI*(h-7)/12))};   // Fassade besonnt 7–19 Uhr
+function air(t){const h=(t/3600)%24;return val("tm")+val("amp")*Math.cos(2*Math.PI*(h-15)/24)}
+function step(){
+  const{T,K,N,cells,dt}=S,ti=val("tm"),h=(S.t/3600)%24,te=air(S.t),tsol=te+sunI(h)*RSE;
+  const q=new Float64Array(N+1);
+  q[0]=K[0]*(ti-T[0]);for(let i=1;i<N;i++)q[i]=K[i]*(T[i-1]-T[i]);q[N]=K[N]*(T[N-1]-tsol);
+  for(let i=0;i<N;i++)T[i]+=dt*(q[i]-q[i+1])/cells[i].C;
+  S.t+=dt;
+  const rec=Math.floor(S.t/300);
+  if(rec!==S.lastRec){S.lastRec=rec;const si=ti-q[0]*RSI,se=tsol+q[N]*RSE;S.hist.push({t:S.t,si,se,te});if(S.hist.length>577)S.hist.shift()}
+}
+
+/* ---------- Zeichnen ---------- */
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function tcol(v,lo,hi){const x=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));const a=[37,99,235],m=[236,236,228],b=[194,65,12];
+  const c=x<.5?a.map((k,i)=>k+(m[i]-k)*x*2):m.map((k,i)=>k+(b[i]-k)*(x-.5)*2);return`rgb(${c.map(Math.round).join(",")})`}
+function drawWall(){
+  const cv=$("wall"),g=cv.getContext("2d"),W=cv.width,H=cv.height,x0=150,x1=W-150,yt=64,yb=H-60;
+  const ink=css("--ink"),mut=css("--muted"),line=css("--line");
+  g.clearRect(0,0,W,H);g.font="22px IBM Plex Mono, monospace";
+  const span=val("amp")+(+$("sun").value?18:3),lo=val("tm")-span,hi=val("tm")+span;   // Skala um das Tagesmittel zentriert
+  const h=(S.t/3600)%24,te=air(S.t),tsol=te+sunI(h)*RSE,ti=val("tm");
+  // Luftzonen
+  g.fillStyle=tcol(ti,lo,hi);g.globalAlpha=.35;g.fillRect(0,yt,x0,yb-yt);g.fillStyle=tcol(te,lo,hi);g.fillRect(x1,yt,W-x1,yb-yt);g.globalAlpha=1;
+  // Temperaturfeld
+  let x=x0;const xs=[];
+  S.cells.forEach((c,i)=>{const w=c.dx*100/S.tot*(x1-x0);g.fillStyle=tcol(S.T[i],lo,hi);g.fillRect(x,yt,w+.6,yb-yt);xs.push(x+w/2);x+=w});
+  // Schichtgrenzen und Namen
+  let xx=x0;g.strokeStyle=ink;g.globalAlpha=.55;g.lineWidth=1.5;g.fillStyle=ink;g.textAlign="center";g.font="18px Archivo, sans-serif";
+  S.L.forEach((s,i)=>{const w=s.d/S.tot*(x1-x0);g.beginPath();g.moveTo(xx,yt);g.lineTo(xx,yb);g.stroke();
+    g.globalAlpha=1;if(w>60){g.fillText(`${i+1}`,xx+w/2,yt-12)}g.globalAlpha=.55;xx+=w});
+  g.beginPath();g.moveTo(x1,yt);g.lineTo(x1,yb);g.stroke();g.globalAlpha=1;
+  // Profil
+  const tmin=lo,tmax=hi,ty=v=>yb-(v-tmin)/(tmax-tmin)*(yb-yt);
+  g.strokeStyle=ink;g.lineWidth=3;g.beginPath();g.moveTo(10,ty(ti));g.lineTo(x0,ty(ti-(ti-S.T[0])*RSI*S.K[0]));
+  S.T.forEach((v,i)=>g.lineTo(xs[i],ty(v)));g.lineTo(x1,ty(tsol+(S.T[S.N-1]-tsol)*RSE*S.K[S.N]));g.lineTo(W-10,ty(te));g.stroke();
+  // Beschriftung
+  g.font="20px IBM Plex Mono, monospace";g.fillStyle=ink;g.textAlign="left";g.fillText(`innen ${fmt(ti,1)} °C`,8,yb+34);
+  g.textAlign="right";g.fillText(`außen ${fmt(te,1)} °C`,W-8,yb+34);
+  if(+$("sun").value&&sunI(h)>1){g.fillStyle="#f5b42a";g.beginPath();g.arc(W-60,yt+40,20,0,7);g.fill();g.fillStyle=mut;g.fillText(`Sonne ${fmt(sunI(h)/(+$("sun").value),0)} W/m²`,W-8,yt+90)}
+  g.textAlign="center";g.fillStyle=mut;g.font="18px Archivo, sans-serif";g.fillText(`Wanddicke ${fmt(S.tot,1)} cm · Farbe = Temperatur`,W/2,H-12);
+  // Farbskala
+  for(let i=0;i<120;i++){g.fillStyle=tcol(lo+(hi-lo)*i/119,lo,hi);g.fillRect(x0+i*2,8,2.2,12)}
+  g.fillStyle=mut;g.font="16px IBM Plex Mono, monospace";g.textAlign="left";g.fillText(`${fmt(lo,0)}`,x0-40,20);g.fillText(`${fmt(hi,0)} °C`,x0+248,20);g.fillText(`${fmt(val("tm"),0)}`,x0+108,20);
+}
+function drawTime(){
+  const cv=$("time"),g=cv.getContext("2d"),W=cv.width,H=cv.height,x0=70,x1=W-80,yt=20,yb=H-40;
+  const ink=css("--ink"),mut=css("--muted"),line=css("--line"),bad=css("--bad"),cold=css("--cold");
+  g.clearRect(0,0,W,H);if(S.hist.length<2)return;
+  const tEnd=S.t,tStart=tEnd-48*3600,X=t=>x0+(t-tStart)/(48*3600)*(x1-x0);
+  const se=S.hist.map(p=>p.se),te=S.hist.map(p=>p.te),si=S.hist.map(p=>p.si);
+  const lo=Math.min(...se,...te)-1,hi=Math.max(...se,...te)+1,Y=v=>yb-(v-lo)/(hi-lo)*(yb-yt);
+  const ilo=Math.min(...si),ihi=Math.max(...si),ip=Math.max(.2,(ihi-ilo)*.7),imid=(ilo+ihi)/2,YI=v=>yb-(v-(imid-ip))/(2*ip)*(yb-yt);
+  g.font="16px IBM Plex Mono, monospace";g.strokeStyle=line;g.lineWidth=1;g.fillStyle=mut;
+  const st=hi-lo>20?5:2;for(let v=Math.ceil(lo/st)*st;v<=hi;v+=st){g.beginPath();g.moveTo(x0,Y(v));g.lineTo(x1,Y(v));g.stroke();g.textAlign="right";g.fillText(`${v}°`,x0-8,Y(v)+5)}
+  g.textAlign="left";g.fillStyle=cold;[imid-ip*.8,imid,imid+ip*.8].forEach(v=>g.fillText(`${fmt(v,ip<1?2:1)}°`,x1+8,YI(v)+5));
+  g.fillStyle=mut;g.textAlign="center";
+  for(let k=Math.ceil(tStart/(6*3600));k*6*3600<=tEnd;k++){const t=k*6*3600,xx=X(t);g.beginPath();g.moveTo(xx,yt);g.lineTo(xx,yb);g.stroke();g.fillText(`${String((k*6)%24).padStart(2,"0")}:00`,xx,yb+24)}
+  const pl=(arr,f,col,w,dash)=>{g.strokeStyle=col;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();S.hist.forEach((p,i)=>{const xx=X(p.t),yy=f(arr[i]);i?g.lineTo(xx,yy):g.moveTo(xx,yy)});g.stroke();g.setLineDash([])};
+  pl(te,Y,mut,2,[6,5]);pl(se,Y,bad,3);pl(si,YI,cold,3);
+}
+
+/* ---------- Auswertung des letzten Tages ---------- */
+function measure(){
+  const n=288;if(S.hist.length<n+1){return}
+  const last=S.hist.slice(-n),mx=(k)=>last.reduce((b,p)=>p[k]>b[k]?p:b),mn=(k)=>last.reduce((b,p)=>p[k]<b[k]?p:b);
+  const ase=(mx("se").se-mn("se").se)/2,asi=(mx("si").si-mn("si").si)/2;
+  let ph=((mx("si").t-mx("se").t)/3600)%24;if(ph<0)ph+=24;
+  $("r-ph").textContent=fmt(ph,1);$("r-tav").textContent=fmt(asi/ase,asi/ase<.01?4:3);$("r-ain").textContent=fmt(asi,2);
+}
+function showCalc(){
+  $("r-ph2").innerHTML=`Rechnung \\(${n_(S.dyn.ph,1)}\\,\\mathrm{h}\\)`;$("r-tav2").innerHTML=`Rechnung \\(${n_(S.dyn.tav,S.dyn.tav<.01?4:3)}\\)`;typeset([$("r-ph2"),$("r-tav2")]);
+  ["r-ph","r-tav","r-ain"].forEach(id=>$(id).textContent="…");
+}
+
+/* ---------- Schleife ---------- */
+let run=true,lastFrame=0;
+function frame(ts){
+  if(run&&S){const sp=val("sp")*3600,elapsed=Math.min(.1,(ts-(lastFrame||ts))/1000),until=S.t+sp*elapsed;
+    while(S.t<until)step();}
+  lastFrame=ts;
+  if(S){drawWall();drawTime();const d=Math.floor((S.t-S.t0)/DAY)+1,h=(S.t/3600)%24;$("clock").textContent=`Tag ${d} · ${String(Math.floor(h)).padStart(2,"0")}:${String(Math.floor(h%1*60)).padStart(2,"0")}`;
+    if(Math.floor(S.t/600)!==S._m){S._m=Math.floor(S.t/600);measure()}}
+  requestAnimationFrame(frame);
+}
+function restart(){build();showCalc()}
+const outs=()=>{$("o-tm").textContent=`${val("tm")} °C`;$("o-amp").textContent=`${val("amp")} K`;$("o-sp").textContent=`${fmt(val("sp"),1)} h/s`};
+["preset","sun"].forEach(id=>$(id).onchange=restart);
+["tm","amp"].forEach(id=>$(id).oninput=()=>{outs();restart()});
+$("sp").oninput=outs;
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Weiter"};
+$("restart").onclick=restart;
+if(matchMedia("(prefers-reduced-motion: reduce)").matches){run=false;$("play").textContent="Abspielen"}
+outs();restart();requestAnimationFrame(frame);
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const ds=PRESETS.map(p=>dyn(p.L(),RSI,RSE));
+  const best=ds.reduce((k,d,i)=>d.ph>ds[k].ph?i:k,0),worst=ds.reduce((k,d,i)=>d.tav>ds[k].tav?i:k,0);
+  const ph=pk([6,8,10,12,14]),tmax=pk([14,15,16]),amp=pk([8,10,12]),tav=pk([0.02,0.05,0.1,0.2]);
+  const T=[
+    {kind:"sel",q:"Welche dieser Wände hat die größte Phasenverschiebung? Probiere es in der Simulation aus.",opts:PRESETS.map(p=>p.n),ans:best,sol:`Rechnung nach EN ISO 13786: ${PRESETS.map((p,i)=>`${p.n}: \\(\\varphi = ${n_(ds[i].ph,1)}\\,\\mathrm{h}\\)`).join("; ")}.`},
+    {kind:"sel",q:"Welche Wand lässt die Temperaturschwankung am stärksten nach innen durch (größter TAV)?",opts:PRESETS.map(p=>p.n),ans:worst,sol:`Wenig Masse und dünne Schichten dämpfen kaum: ${PRESETS[worst].n} mit TAV \\(= ${n_(ds[worst].tav,3)}\\).`},
+    {kind:"num",q:`Außen ist die Oberfläche um ${tmax}:00 Uhr am wärmsten. Die Phasenverschiebung beträgt \\(\\varphi = ${ph}\\,\\mathrm{h}\\). Um wie viel Uhr ist die innere Oberfläche am wärmsten?`,ans:(tmax+ph)%24,unit:"Uhr",atol:.01,sol:`\\(${tmax} + ${ph} = ${tmax+ph}\\)${tmax+ph>=24?`, minus 24 h: \\(${(tmax+ph)%24}\\)`:""} Uhr`},
+    {kind:"num",q:`Die äußere Oberfläche schwankt um \\(\\pm ${amp}\\,\\mathrm{K}\\), der TAV der Wand ist \\(${n_(tav,2)}\\). Wie stark schwankt die innere Oberfläche?`,ans:amp*tav,unit:"\\(\\mathrm{K}\\)",atol:.011,sol:`\\(\\Delta\\theta_{si} = \\mathrm{TAV}\\cdot\\Delta\\theta_{se} = ${n_(tav,2)}\\cdot${amp} = ${n_(amp*tav,2)}\\,\\mathrm{K}\\)`},
+    {kind:"sel",q:"Warum ist eine Außendämmung im Sommer günstiger als eine Innendämmung?",opts:["Weil der U-Wert kleiner wird","Weil das Mauerwerk auf der Raumseite liegt und als Speicher wirkt","Weil die Dämmung außen weniger Sonne bekommt"],ans:1,sol:"Der U-Wert ist bei beiden gleich. Bei der Außendämmung liegt die Speichermasse innen: große Dämpfung und große Phasenverschiebung."},
+    {kind:"sel",q:"Was passiert, wenn die Fassade dunkel statt hell ist?",opts:["Die Außenoberfläche wird bei Sonne deutlich wärmer","Die Phasenverschiebung wird größer","Nichts, nur die Lufttemperatur zählt"],ans:0,sol:"Dunkle Flächen absorbieren mehr Strahlung: \\(\\theta_{sol} = \\theta_e + a\\cdot I\\cdot R_{se}\\) steigt. Die Phasenverschiebung bleibt eine Eigenschaft der Wand."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=n=>$("qscore").textContent=`${n} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+</script>
+</body>
+</html>

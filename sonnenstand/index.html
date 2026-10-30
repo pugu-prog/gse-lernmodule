@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sonnenstand und Auskragung · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>.sunsvg text{font-family:var(--f-mono)}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Sonnenstand und Auskragung</h1>
+      <p class="sub">Im Sommer steht die Sonne über Ettelbruck hoch, im Winter tief. Ein Balkon oder Vordach nutzt das aus: Er hält die Sommersonne vom Fenster fern und lässt die Wintersonne herein.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Sonne über Ettelbruck</h2>
+    <div class="ctrls">
+      <label>Datum <output id="o-day"></output><input type="range" id="day" min="1" max="365" value="172"></label>
+      <label>Uhrzeit (Sonnenzeit) <output id="o-hr"></output><input type="range" id="hr" min="4" max="20" step="0.25" value="12"></label>
+      <label>Fassade zeigt nach<select id="fac"><option value="0" selected>Süden</option><option value="-45">Südosten</option><option value="45">Südwesten</option><option value="-90">Osten</option><option value="90">Westen</option></select></label>
+    </div>
+    <div class="playbar">
+      <button class="primary" id="pday">Tag abspielen</button>
+      <button id="pyear">Jahr abspielen (mittags)</button>
+      <span class="modes" role="group" aria-label="Schnelle Daten"><button data-d="172">21. Juni</button><button data-d="80">21. März</button><button data-d="355">21. Dezember</button></span>
+    </div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Sonnenhöhe \(h\)</span><span class="val" id="r-h">–</span><span class="unit">°</span></div>
+      <div class="result"><span class="lab">Azimut \(A\) (Süd = 0°)</span><span class="val" id="r-a">–</span><span class="unit">°</span></div>
+      <div class="result"><span class="lab">Profilwinkel \(\alpha_p\)</span><span class="val" id="r-p">–</span><span class="unit">°</span></div>
+      <div class="result"><span class="lab">Fenster verschattet</span><span class="val dp" id="r-s">–</span><span class="unit">%</span><span class="pill neu" id="r-s2"></span></div>
+    </div>
+    <div class="grid even">
+      <div><h3>Sonnenbahnen im Jahr</h3><svg id="path" class="sunsvg" viewBox="0 0 520 300" width="100%" role="img" aria-label="Sonnenbahndiagramm für Ettelbruck"></svg>
+        <div class="legend"><span><i class="lg" style="border-top:2px solid #f5b42a"></i>gewählter Tag</span><span><i class="lg d"></i>21.6. / 21.3. / 21.12.</span></div></div>
+      <div><h3>Schnitt durch Fassade und Fenster</h3><svg id="cut" class="sunsvg" viewBox="0 0 520 340" width="100%" role="img" aria-label="Vertikalschnitt mit Auskragung, Fenster und Sonnenstrahlen"></svg></div>
+    </div>
+    <div class="ctrls">
+      <label>Auskragung Tiefe \(L\) <output id="o-L"></output><input type="range" id="L" min="0" max="2.5" step="0.05" value="1.2"></label>
+      <label>Abstand Auskragung–Fenster \(a\) <output id="o-a"></output><input type="range" id="a" min="0" max="1" step="0.05" value="0.3"></label>
+      <label>Fensterhöhe \(h_F\) <output id="o-hf"></output><input type="range" id="hf" min="0.8" max="2.6" step="0.05" value="1.6"></label>
+    </div>
+    <p class="info" id="sinfo"></p>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>Deklination \(\delta = 23{,}45^\circ \cdot \sin\!\left(\frac{360^\circ}{365}(284+n)\right)\)</h3><p>Die Erdachse ist um 23,45° geneigt. Deshalb wandert die Sonne über das Jahr zwischen \(+23{,}45^\circ\) (21. Juni) und \(-23{,}45^\circ\) (21. Dezember). \(n\) ist der Tag im Jahr.</p></div>
+      <div><h3>Mittagshöhe \(h_{max} = 90^\circ - \varphi + \delta\)</h3><p>Für Ettelbruck (\(\varphi = 49{,}85^\circ\)): 21. Juni \(63{,}6^\circ\), 21. März und 23. September \(40{,}2^\circ\), 21. Dezember nur \(16{,}7^\circ\).</p></div>
+      <div><h3>Sonnenhöhe zu jeder Uhrzeit</h3><p>\(\sin h = \sin\varphi\sin\delta + \cos\varphi\cos\delta\cos\omega\) mit dem Stundenwinkel \(\omega = 15^\circ\cdot(t-12\,\mathrm{h})\). \(t\) ist die Sonnenzeit: In Luxemburg ist es mittags (MEZ) etwa 36 Minuten früher als Sonnenmittag, im Sommer (MESZ) etwa 1 h 36 min.</p></div>
+      <div><h3>Profilwinkel \(\tan\alpha_p = \dfrac{\tan h}{\cos\gamma}\)</h3><p>Für den Schatten zählt der Winkel in der Schnittebene der Fassade. \(\gamma\) ist der Winkel zwischen Sonnenrichtung und Fassadennormale. Steht die Sonne seitlich, wird \(\alpha_p\) größer als \(h\).</p></div>
+      <div><h3>Schattentiefe \(s = L \cdot \tan\alpha_p\)</h3><p>So weit reicht der Schatten der Auskragung an der Wand nach unten. Liegt die Fensteroberkante \(a\) unter der Auskragung, ist der Anteil \(\dfrac{s-a}{h_F}\) des Fensters verschattet.</p></div>
+      <div><h3>Warum Süden?</h3><p>An der Südfassade steht die Sommersonne mittags hoch und wird von einer Auskragung gut abgehalten. Ost- und Westfenster bekommen morgens und abends flache Sonne, die kein Vordach abhält; dort helfen nur Lamellen oder Rollläden.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Ettelbruck: 49,85° N, 6,10° O</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script>
+const PHI=49.85,rad=Math.PI/180,deg=180/Math.PI;
+const decl=n=>23.45*Math.sin(rad*360/365*(284+n));
+function sun(n,t){
+  const d=decl(n)*rad,w=15*(t-12)*rad,p=PHI*rad;
+  const h=Math.asin(Math.sin(p)*Math.sin(d)+Math.cos(p)*Math.cos(d)*Math.cos(w));
+  const A=Math.atan2(Math.sin(w),Math.sin(p)*Math.cos(w)-Math.cos(p)*Math.tan(d));
+  return{h:h*deg,A:A*deg,d:d*deg};
+}
+function shade(s,fac,L,a,hf){
+  const g=((s.A-fac+540)%360)-180;
+  if(s.h<=0)return{state:"nacht",g};
+  if(Math.abs(g)>=90)return{state:"hinten",g};
+  const ap=Math.atan(Math.tan(s.h*rad)/Math.cos(g*rad))*deg,sd=L*Math.tan(ap*rad),sh=Math.max(0,Math.min(hf,sd-a));
+  return{state:"sonne",g,ap,sd,frac:sh/hf,inc:Math.acos(Math.cos(s.h*rad)*Math.cos(g*rad))*deg};
+}
+const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"],ML=[31,28,31,30,31,30,31,31,30,31,30,31];
+function dname(n){let m=0;while(n>ML[m]){n-=ML[m];m++}return`${n}. ${MON[m]}`}
+const hm=t=>`${String(Math.floor(t)).padStart(2,"0")}:${String(Math.round(t%1*60)).padStart(2,"0")}`;
+const mesz=n=>n>=86&&n<=300;
+
+function drawPath(n,t,fac){
+  const W=520,H=300,x0=40,x1=505,yt=16,yb=262,X=a=>x0+(a+135)/270*(x1-x0),Y=h=>yb-h/70*(yb-yt);
+  let s="";
+  for(let h=0;h<=70;h+=10)s+=`<line x1="${x0}" x2="${x1}" y1="${Y(h)}" y2="${Y(h)}" stroke="var(--line)"/><text x="${x0-6}" y="${Y(h)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${h}°</text>`;
+  [["O",-90],["SO",-45],["S",0],["SW",45],["W",90]].forEach(([l,a])=>s+=`<line x1="${X(a)}" x2="${X(a)}" y1="${yt}" y2="${yb}" stroke="var(--line)"/><text x="${X(a)}" y="${yb+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${l}</text>`);
+  s+=`<rect x="${X(fac-90)}" y="${yb}" width="${X(fac+90)-X(fac-90)}" height="5" fill="var(--accent)" opacity=".6"/><text x="${X(fac)}" y="${yb+30}" text-anchor="middle" font-size="10" fill="var(--accent)">Fassade sieht diesen Bereich</text>`;
+  const curve=(nn,col,dash,w)=>{let p=[];for(let tt=3;tt<=21;tt+=.1){const q=sun(nn,tt);if(q.h>=0&&q.A>-135&&q.A<135)p.push(`${X(q.A).toFixed(1)},${Y(q.h).toFixed(1)}`)}return`<polyline points="${p.join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${dash?'stroke-dasharray="5 4"':""}/>`};
+  [[172,"21.6."],[80,"21.3."],[355,"21.12."]].forEach(([nn,l])=>{s+=curve(nn,"var(--muted)",1,1.5);const q=sun(nn,12);s+=`<text x="${X(0)+6}" y="${Y(q.h)-6}" font-size="10" fill="var(--muted)">${l}</text>`});
+  s+=curve(n,"#f5b42a",0,3);
+  for(let tt=6;tt<=18;tt+=2){const q=sun(n,tt);if(q.h>0)s+=`<circle cx="${X(q.A)}" cy="${Y(q.h)}" r="2.5" fill="#f5b42a"/><text x="${X(q.A)}" y="${Y(q.h)+14}" text-anchor="middle" font-size="9" fill="var(--muted)">${tt}</text>`}
+  const q=sun(n,t);if(q.h>0)s+=`<circle cx="${X(q.A)}" cy="${Y(q.h)}" r="10" fill="#f5b42a" stroke="var(--panel)" stroke-width="2"/>`;
+  $("path").innerHTML=s;
+}
+function drawCut(sh){
+  const W=520,H=340,m=95,wx=300,gy=310,L=val("L"),a=val("a"),hf=val("hf"),sill=0.9,top=sill+hf,ov=top+a; // Meter
+  const Y=z=>gy-z*m*0.72,X=x=>wx+x*m*0.72; // x>0 außen
+  let s=`<rect x="0" y="0" width="${W}" height="${H}" fill="none"/>`;
+  s+=`<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--ink)" stroke-opacity=".5"/>`;
+  // Wand mit Fensteröffnung
+  s+=`<rect x="${X(-.3)}" y="${Y(ov+.35)}" width="${.3*m*.72}" height="${Y(top)-Y(ov+.35)}" fill="#c96f4a"/><rect x="${X(-.3)}" y="${Y(sill)}" width="${.3*m*.72}" height="${gy-Y(sill)}" fill="#c96f4a"/>`;
+  s+=`<rect x="${X(-.18)}" y="${Y(top)}" width="6" height="${Y(sill)-Y(top)}" fill="#cfe8ef" stroke="var(--cold)"/>`;
+  s+=`<rect x="${X(0)}" y="${Y(ov)-8}" width="${L*m*.72}" height="8" fill="var(--ink)" fill-opacity=".75"/>`;
+  s+=`<text x="${X(L/2)}" y="${Y(ov)-14}" text-anchor="middle" font-size="11" fill="var(--ink)">L = ${fmt(L,2)} m</text>`;
+  s+=`<text x="${X(-.3)-8}" y="${Y((top+sill)/2)}" text-anchor="end" font-size="11" fill="var(--muted)">innen</text><text x="${X(L)+10}" y="${gy-8}" font-size="11" fill="var(--muted)">außen</text>`;
+  s+=`<line x1="${X(-.18)+12}" x2="${X(-.18)+12}" y1="${Y(top)}" y2="${Y(sill)}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${X(-.18)+16}" y="${Y((top+sill)/2)+4}" font-size="10" fill="var(--muted)">hF</text>`;
+  if(sh.state==="sonne"){
+    const t=Math.tan(sh.ap*rad),edge=ov-L*t; // Schattengrenze an der Wand
+    // Strahlen: kommen von außen oben, enden auf der Auskragung, an der Wand oder (durchs Fenster) auf dem Boden
+    for(let k=0;k<=14;k++){const zw=0.15+k*0.28;if(zw>ov+0.9)break;
+      const blocked=zw>edge&&zw<ov,inWin=!blocked&&zw>sill&&zw<top,xs=3.4;
+      const ex=blocked?(ov-zw)/t:inWin?-Math.min(zw/t,3):0,ez=blocked?ov:inWin?Math.max(0,zw-Math.min(zw/t,3)*t):zw;
+      s+=`<line x1="${X(xs)}" y1="${Y(zw+xs*t)}" x2="${X(ex)}" y2="${Y(ez)}" stroke="#f5b42a" stroke-width="1.6" opacity="${inWin?1:.6}"/>`;}
+    // verschatteter Bereich am Fenster
+    const zt=Math.min(top,Math.max(sill,edge));
+    if(top>zt)s+=`<rect x="${X(-.18)-3}" y="${Y(top)}" width="12" height="${Y(zt)-Y(top)}" fill="var(--ink)" fill-opacity=".35"/>`;
+    // Lichtfleck im Raum
+    if(zt>sill){const d1=sill/t,d2=zt/t;s+=`<rect x="${X(-.18-Math.min(d2,3))}" y="${gy-4}" width="${Math.max(2,(Math.min(d2,3)-Math.min(d1,3))*m*.72)}" height="6" fill="#f5b42a"/>`;}
+    s+=`<path d="M ${X(L)} ${Y(ov)} L ${X(L)+40} ${Y(ov)}" stroke="var(--muted)"/><path d="M ${X(L)+34} ${Y(ov)} A 34 34 0 0 1 ${X(L)+34*Math.cos(sh.ap*rad)} ${Y(ov)+34*Math.sin(sh.ap*rad)}" fill="none" stroke="var(--accent)"/><text x="${X(L)+44}" y="${Y(ov)+16}" font-size="11" fill="var(--accent)">αp = ${fmt(sh.ap,1)}°</text>`;
+  }else s+=`<text x="${W/2}" y="40" text-anchor="middle" font-size="13" fill="var(--muted)">${sh.state==="nacht"?"Die Sonne ist untergegangen.":"Die Sonne steht hinter der Fassade."}</text>`;
+  $("cut").innerHTML=s;
+}
+function update(){
+  const n=+$("day").value,t=val("hr"),fac=+$("fac").value,q=sun(n,t),sh=shade(q,fac,val("L"),val("a"),val("hf"));
+  const clock=t+36/60+(mesz(n)?1:0);
+  $("o-day").textContent=`${dname(n)} · δ = ${fmt(q.d,1)}°`;$("o-hr").textContent=`${hm(t)} · Uhr ≈ ${hm(clock)} ${mesz(n)?"MESZ":"MEZ"}`;
+  $("o-L").textContent=`${fmt(val("L"),2)} m`;$("o-a").textContent=`${fmt(val("a"),2)} m`;$("o-hf").textContent=`${fmt(val("hf"),2)} m`;
+  $("r-h").textContent=fmt(Math.max(q.h,0),1);$("r-a").textContent=fmt(q.A,1);
+  $("r-p").textContent=sh.state==="sonne"?fmt(sh.ap,1):"–";
+  $("r-s").textContent=sh.state==="sonne"?fmt(sh.frac*100,0):"–";
+  $("r-s2").textContent=sh.state==="sonne"?`Schattentiefe ${fmt(sh.sd,2)} m`:sh.state==="nacht"?"Nacht":"keine direkte Sonne";
+  const hn=90-PHI+decl(n);
+  $("sinfo").innerHTML=`Am ${dname(n)} steht die Sonne mittags \\(h_{max} = 90^\\circ - ${n_(PHI,2)}^\\circ ${decl(n)<0?"-":"+"} ${n_(Math.abs(decl(n)),1)}^\\circ = ${n_(hn,1)}^\\circ\\) hoch.`+
+    (sh.state==="sonne"?` Jetzt: \\(s = L\\cdot\\tan\\alpha_p = ${n_(val("L"),2)}\\cdot\\tan ${n_(sh.ap,1)}^\\circ = ${n_(sh.sd,2)}\\,\\mathrm{m}\\), davon liegen \\(${n_(Math.max(0,Math.min(val("hf"),sh.sd-val("a"))),2)}\\,\\mathrm{m}\\) vor dem Fenster. Einfallswinkel auf die Fassade \\(${n_(sh.inc,0)}^\\circ\\).`:"");
+  typeset($("sinfo"));drawPath(n,t,fac);drawCut(sh);
+}
+["day","hr","fac","L","a","hf"].forEach(id=>$(id).oninput=update);$("fac").onchange=update;
+document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{$("day").value=b.dataset.d;update()});
+let anim=null;
+function play(kind){
+  if(anim){cancelAnimationFrame(anim.id);const k=anim.kind;anim=null;$("pday").textContent="Tag abspielen";$("pyear").textContent="Jahr abspielen (mittags)";if(k===kind)return}
+  anim={kind,last:0};if(kind==="year")$("hr").value=12;
+  (kind==="day"?$("pday"):$("pyear")).textContent="Stopp";
+  const tick=ts=>{if(!anim)return;const dt=anim.last?Math.min(.1,(ts-anim.last)/1000):0;anim.last=ts;
+    if(kind==="day"){let t=val("hr")+dt*1.5;if(t>20)t=4;$("hr").value=t}else{let d=+$("day").value+dt*40;if(d>365)d=1;$("day").value=Math.round(d)}
+    update();anim.id=requestAnimationFrame(tick)};anim.id=requestAnimationFrame(tick);
+}
+$("pday").onclick=()=>play("day");$("pyear").onclick=()=>play("year");
+update();
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const days=[[172,"21. Juni"],[80,"21. März"],[355,"21. Dezember"],[266,"23. September"]];const[dn,dl]=pk(days);const hmx=90-PHI+decl(dn);
+  const L=pk([0.8,1,1.2,1.5]),ap=pk([30,45,60]),a=pk([0.2,0.3,0.4]),hf=pk([1.2,1.5]);const sd=L*Math.tan(ap*rad),fr=Math.max(0,Math.min(1,(sd-a)/hf));
+  const T=[
+    {kind:"num",q:`Wie hoch steht die Sonne in Ettelbruck (\\(\\varphi = 49{,}85^\\circ\\)) am ${dl} mittags? Deklination \\(\\delta = ${n_(decl(dn),1)}^\\circ\\).`,ans:hmx,unit:"°",atol:.3,sol:`\\(h_{max} = 90^\\circ - 49{,}85^\\circ ${decl(dn)<0?"-":"+"} ${n_(Math.abs(decl(dn)),1)}^\\circ = ${n_(hmx,1)}^\\circ\\)`},
+    {kind:"num",q:`Ein Balkon kragt \\(L = ${n_(L,2)}\\,\\mathrm{m}\\) aus. Der Profilwinkel der Sonne ist \\(\\alpha_p = ${ap}^\\circ\\). Wie weit reicht der Schatten an der Wand nach unten?`,ans:sd,unit:"\\(\\mathrm{m}\\)",tol:.02,sol:`\\(s = L\\cdot\\tan\\alpha_p = ${n_(L,2)}\\cdot\\tan ${ap}^\\circ = ${n_(sd,2)}\\,\\mathrm{m}\\)`},
+    {kind:"num",q:`Das Fenster beginnt \\(a = ${n_(a,2)}\\,\\mathrm{m}\\) unter dem Balkon und ist \\(h_F = ${n_(hf,2)}\\,\\mathrm{m}\\) hoch. Wie viel Prozent des Fensters liegen im Schatten (Werte aus Frage 2)?`,ans:fr*100,unit:"%",atol:1.5,sol:`\\(\\frac{s-a}{h_F} = \\frac{${n_(sd,2)}-${n_(a,2)}}{${n_(hf,2)}} = ${n_(fr*100,0)}\\,\\%\\)${(sd-a)/hf>1?" (mehr als 100 %, also ganz)":""}${sd<a?" (Schatten endet über dem Fenster)":""}`},
+    {kind:"sel",q:"Warum lässt ein richtig bemessener Balkon über einem Südfenster die Wintersonne herein?",opts:["Weil die Sonne im Winter tief steht und unter dem Balkon durchscheint","Weil der Balkon im Winter kälter ist","Weil die Sonne im Winter aus dem Norden kommt"],ans:0,sol:"Im Winter ist \\(h_{max}\\) nur etwa \\(17^\\circ\\): Der Schatten ist kurz und das Fenster bleibt besonnt."},
+    {kind:"sel",q:"Welche Fenster lassen sich mit einem Vordach am schlechtesten verschatten?",opts:["Südfenster","Ost- und Westfenster","Alle gleich gut"],ans:1,sol:"Morgens und abends steht die Sonne flach; der Profilwinkel ist klein und der Schatten des Vordachs sehr kurz."},
+    {kind:"sel",q:"Wie groß ist die Mittagshöhe am 21. März ungefähr?",opts:["\\(90^\\circ - \\varphi \\approx 40^\\circ\\)","\\(\\varphi \\approx 50^\\circ\\)","\\(23{,}45^\\circ\\)"],ans:0,sol:"Zur Tagundnachtgleiche ist \\(\\delta = 0^\\circ\\), also \\(h_{max} = 90^\\circ - 49{,}85^\\circ = 40{,}15^\\circ\\)."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+</script>
+</body>
+</html>

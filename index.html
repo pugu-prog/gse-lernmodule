@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GSE-Lernmodule</title>
+<meta name="description" content="Interaktive Lernmodule für Sciences Environnementales am Lycée Technique d'Ettelbruck: rechnen, simulieren, üben.">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/base.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <p class="c" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.09em;font-weight:600">Sciences Environnementales · LTEtt</p>
+      <h1>GSE-Lernmodule</h1>
+      <p class="sub">Rechnen, simulieren und üben zu den Themen des Kurses. Jedes Modul erklärt die Formeln aus der ENTEC-Formelsammlung, zeigt in einer Animation, was passiert, und prüft dein Wissen mit Aufgaben, die sofort ausgewertet werden.</p>
+    </div>
+    <svg viewBox="0 0 360 200" role="img" aria-label="Wandquerschnitt mit Temperaturverlauf und Sonne">
+      <rect x="0" y="0" width="360" height="200" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+      <circle cx="318" cy="38" r="16" fill="#f5b42a"/>
+      <g stroke="#f5b42a" stroke-width="2" stroke-dasharray="4 5"><line x1="300" y1="50" x2="236" y2="96"/><line x1="306" y1="60" x2="248" y2="120"/></g>
+      <rect x="120" y="30" width="16" height="150" fill="#f2c4a6"/><rect x="136" y="30" width="70" height="150" fill="#c96f4a"/><rect x="206" y="30" width="40" height="150" fill="#e9d36b"/><rect x="246" y="30" width="8" height="150" fill="#d9d4cc"/>
+      <polyline points="30,52 120,58 136,62 206,82 246,160 254,161 340,166" fill="none" stroke="var(--bad)" stroke-width="3" stroke-linejoin="round"/>
+      <text x="30" y="44" font-size="12" fill="var(--warm)" font-family="IBM Plex Mono,monospace">20 °C</text>
+      <text x="292" y="186" font-size="12" fill="var(--cold)" font-family="IBM Plex Mono,monospace">−10 °C</text>
+    </svg>
+  </header>
+
+  <main id="chapters" class="tabpane"></main>
+
+  <footer class="foot">
+    <span>Guy Putz · Lycée Technique d'Ettelbruck · Sektion GSE</span>
+    <span>Werte nach ENTEC-Formelsammlung 26/27 · Funktioniert ohne Anmeldung, auch auf dem Handy</span>
+  </footer>
+</div>
+<script>
+/* Modulliste: ein neues Modul = ein Eintrag hier + ein Ordner mit index.html */
+const ART={
+  uwert:`<rect x="70" y="14" width="10" height="72" fill="#f2c4a6"/><rect x="80" y="14" width="44" height="72" fill="#c96f4a"/><rect x="124" y="14" width="26" height="72" fill="#e9d36b"/><polyline points="20,24 70,27 124,38 150,78 200,80" fill="none" stroke="var(--bad)" stroke-width="2.5"/><text x="160" y="30" font-size="15" font-family="IBM Plex Mono,monospace" fill="var(--accent)">U</text>`,
+  welle:`<rect x="80" y="12" width="60" height="76" fill="#c96f4a" opacity=".85"/><path d="M10 50 Q25 20 40 50 T70 50" fill="none" stroke="var(--bad)" stroke-width="2.5"/><path d="M150 50 Q165 44 180 50 T210 50" fill="none" stroke="var(--cold)" stroke-width="2.5"/><path d="M84 30 h52" stroke="#fff" stroke-width="2" marker-end="url(#a)"/>`,
+  sonne:`<path d="M10 86 Q110 -10 210 86" fill="none" stroke="#f5b42a" stroke-width="2" stroke-dasharray="4 4"/><path d="M30 86 Q110 40 190 86" fill="none" stroke="#f5b42a" stroke-width="2" stroke-dasharray="4 4" opacity=".6"/><circle cx="110" cy="22" r="10" fill="#f5b42a"/><line x1="10" y1="86" x2="210" y2="86" stroke="var(--muted)"/>`,
+  trombe:`<rect x="60" y="12" width="6" height="76" fill="#cfe8ef"/><rect x="82" y="12" width="26" height="76" fill="#3a3330"/><path d="M74 80 V20 M74 20 h40" fill="none" stroke="var(--warm)" stroke-width="2" stroke-dasharray="4 3"/><path d="M114 80 h-40" fill="none" stroke="var(--cold)" stroke-width="2" stroke-dasharray="4 3"/><circle cx="24" cy="24" r="10" fill="#f5b42a"/>`,
+  wrg:`<g transform="translate(110 50) rotate(45)"><rect x="-30" y="-30" width="60" height="60" fill="var(--panel)" stroke="var(--ink)" stroke-opacity=".5"/><path d="M-30 -18 h60 M-30 -6 h60 M-30 6 h60 M-30 18 h60" stroke="var(--line)"/></g><path d="M20 50 h50" stroke="var(--cold)" stroke-width="3"/><path d="M150 50 h50" stroke="var(--warm)" stroke-width="3"/><path d="M110 4 v26" stroke="var(--warm)" stroke-width="3"/><path d="M110 70 v26" stroke="var(--cold)" stroke-width="3"/>`,
+  lock:`<rect x="88" y="44" width="44" height="36" rx="5" fill="var(--accent)"/><path d="M98 44 v-10 a12 12 0 0 1 24 0 v10" fill="none" stroke="var(--accent)" stroke-width="5"/>`,
+  soon:`<rect x="20" y="20" width="180" height="60" rx="8" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/>`
+};
+const KAP=[
+  {t:"Wohnklima und Lüftung",m:[
+    {href:"waermetauscher/",t:"Kreuzwärmetauscher",d:"Lüftung mit Wärmerückgewinnung: Luftströme, Temperaturen, Rückwärmezahl und Kondensat in einer animierten Simulation.",a:"wrg",tags:["Simulation","Formelsammlung 1"]},
+    {t:"h,x-Diagramm",d:"Luftzustände eintragen, Erwärmen, Kühlen, Mischen.",a:"soon",tags:["in Vorbereitung"],soon:true}]},
+  {t:"Bauphysik",m:[
+    {href:"u-wert/",t:"U-Wert-Rechner",d:"Wandaufbau mit Materialien aus der Formelsammlung: U-Wert, Temperaturen, Taupunkt, Glaser, Speicher, Wärmeverlust, Lernpfad und Übungen.",a:"uwert",tags:["Rechner","Lernpfad","Üben"]},
+    {href:"waermewelle/",t:"Wärmewelle durch die Wand",d:"Wie die Tageshitze langsam durch die Wand wandert: Phasenverschiebung und TAV live simuliert.",a:"welle",tags:["Animation","TAV"]}]},
+  {t:"Solare Gewinne und Sonnenschutz",m:[
+    {href:"sonnenstand/",t:"Sonnenstand und Auskragung",d:"Sonnenbahn über Ettelbruck im Jahreslauf und der Schatten von Balkon und Vordach am Fenster.",a:"sonne",tags:["Animation","Verschattung"]},
+    {href:"trombewand/",t:"Trombe- und Solarwand",d:"Indirekte Solargewinne: Luftkreislauf, Speicherwand und zeitversetzte Wärmeabgabe bei Tag und Nacht.",a:"trombe",tags:["Animation","Solare Gewinne"]}]},
+  {t:"Wärmeerzeuger",m:[
+    {t:"Wärmepumpe",d:"Kreisprozess, Leistungszahl und Jahresarbeitszahl.",a:"soon",tags:["in Vorbereitung"],soon:true},
+    {t:"Solarthermie",d:"Kollektorertrag und Speicher.",a:"soon",tags:["in Vorbereitung"],soon:true}]},
+  {t:"Für Lehrkräfte",m:[
+    {href:"lehrer/",t:"Aufgaben erstellen",d:"Aufgabenblätter mit Lösungen und LaTeX-Export für ltett.cls. Geschützt mit Passwort.",a:"lock",tags:["Passwort"]}]}
+];
+document.getElementById("chapters").innerHTML=KAP.map(k=>`<section class="chapter"><h2>${k.t}</h2><div class="cards">${k.m.map(m=>
+  `<a class="mcard${m.soon?" soon":""}" ${m.href?`href="${m.href}"`:'aria-disabled="true"'}><svg viewBox="0 0 220 100" aria-hidden="true"><defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6z" fill="#fff"/></marker></defs>${ART[m.a]}</svg><div><h3>${m.t}</h3><p>${m.d}</p></div><div class="tags">${m.tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div></a>`).join("")}</div></section>`).join("");
+</script>
+</body>
+</html>

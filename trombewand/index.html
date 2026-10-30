@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trombe- und Solarwand · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>#scene text{font-family:var(--f-mono)} #scene .lbl{font-family:var(--f-display)}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Trombe- und Solarwand</h1>
+      <p class="sub">Indirekte Solargewinne: Die Sonne erwärmt eine massive, dunkle Wand hinter einer Glasscheibe. Die Wärme kommt teils sofort über die Luft, teils Stunden später durch die Wand im Raum an.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Animation</h2>
+    <div class="playbar">
+      <span class="modes" role="group" aria-label="Bauart"><button data-w="trombe" aria-pressed="true">Trombe-Wand (mit Klappen)</button><button data-w="solar" aria-pressed="false">Solarwand (Speicherwand)</button></span>
+    </div>
+    <div class="playbar">
+      <span class="modes" role="group" aria-label="Situation"><button data-m="wtag" aria-pressed="true">Winter, Tag</button><button data-m="wnacht" aria-pressed="false">Winter, Nacht</button><button data-m="stag" aria-pressed="false">Sommer, Tag</button><button data-m="snacht" aria-pressed="false">Sommer, Nacht</button></span>
+      <button id="play">Pause</button>
+    </div>
+    <svg id="scene" viewBox="0 0 760 430" width="100%" role="img" aria-label="Schnitt durch eine Trombe-Wand mit Luftströmung"></svg>
+    <p class="callout" id="explain"></p>
+  </section>
+
+  <section class="simbox">
+    <h2>Wie lange braucht die Wärme durch die Wand?</h2>
+    <div class="ctrls">
+      <label>Material der Speicherwand<select id="mat"></select></label>
+      <label>Wanddicke \(d\) <output id="o-d"></output><input type="range" id="d" min="15" max="50" step="2.5" value="35"></label>
+      <label>Sonne am stärksten um <output id="o-t0"></output><input type="range" id="t0" min="11" max="15" step="0.5" value="13"></label>
+    </div>
+    <svg id="delay" viewBox="0 0 760 260" width="100%" role="img" aria-label="Sonneneinstrahlung auf die Wand und verzögerte Wärmeabgabe innen über 48 Stunden"></svg>
+    <div class="legend"><span><i class="lg" style="border-top:2.5px solid #f5b42a"></i>Sonne auf der Außenseite der Wand</span><span><i class="lg t"></i>Wärmeabgabe innen (Form, vergrößert)</span></div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Phasenverschiebung \(\varphi\)</span><span class="val" id="r-ph">–</span><span class="unit">\(\mathrm{h}\)</span></div>
+      <div class="result"><span class="lab">Wärme innen am stärksten um</span><span class="val" id="r-t">–</span><span class="unit">Uhr</span></div>
+      <div class="result"><span class="lab">Speicher \(Q' = m' \cdot c \cdot \Delta T\), \(\Delta T = 10\,\mathrm{K}\)</span><span class="val dp" id="r-q">–</span><span class="unit">\(\mathrm{kWh/m^2}\)</span></div>
+    </div>
+    <p class="info" id="dinfo"></p>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>Direkte und indirekte Gewinne</h3><p>Bei direkten Gewinnen scheint die Sonne durchs Fenster in den Raum: schnell, aber ohne Verzögerung. Bei indirekten Gewinnen erwärmt sie zuerst eine Speicherwand, die die Wärme verzögert abgibt.</p></div>
+      <div><h3>Trombe-Wand</h3><p>Zwischen Glas und Wand erwärmt sich die Luft, steigt auf und strömt durch die obere Klappe in den Raum; kühle Raumluft fließt unten nach (Thermosiphon). Nachts werden die Klappen geschlossen, sonst kehrt sich der Kreislauf um und kühlt den Raum.</p></div>
+      <div><h3>Solarwand (Speicherwand)</h3><p>Ohne Klappen gelangt die Wärme nur durch Wärmeleitung nach innen. Bei 30 bis 40 cm Beton dauert das etwa 8 bis 12 Stunden: Die Mittagssonne heizt am Abend.</p></div>
+      <div><h3>Phasenverschiebung</h3><p>Sie hängt von der Dicke und von \(\lambda\), \(\rho\) und \(c\) ab. Faustregel: Die Wärme kommt in Beton etwa 3 bis 4 cm pro Stunde voran. Gerechnet wird hier nach EN ISO 13786 wie im Modul Wärmewelle.</p></div>
+      <div><h3>Sommer</h3><p>Eine Auskragung hält die hohe Sommersonne vom Glas fern. Lüftungsöffnungen im Glas führen die warme Luft nach außen ab. Nachts kühlt die Wand über das Lüften aus.</p></div>
+      <div><h3>Dunkle Oberfläche</h3><p>Die Außenseite der Wand ist dunkel (Absorptionsgrad \(a \approx 0{,}9\)), damit möglichst viel Strahlung in Wärme umgewandelt wird. Das Glas lässt die kurzwellige Sonnenstrahlung hinein und hält die langwellige Wärmestrahlung zurück (Treibhauseffekt).</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Materialwerte: ENTEC-Formelsammlung 26/27, Tabelle 5.3</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bauphysik.js"></script>
+<script>
+/* ---------- Szene ---------- */
+let wall="trombe",mode="wtag",run=!matchMedia("(prefers-reduced-motion: reduce)").matches,ph0=0;
+const TXT={
+  trombe:{wtag:"Winter, Tag: Die tief stehende Sonne scheint unter dem Vordach durch das Glas auf die dunkle Wand. Die Luft im Spalt wird warm, steigt auf und strömt oben in den Raum. Unten fließt kühle Raumluft nach. Gleichzeitig speichert die Wand Wärme.",
+    wnacht:"Winter, Nacht: Die Klappen sind zu. Die Wand gibt die tagsüber gespeicherte Wärme verzögert über Strahlung und Konvektion an den Raum ab. Offene Klappen würden den Kreislauf umkehren: Die Luft würde am kalten Glas abkühlen und den Raum kühlen.",
+    stag:"Sommer, Tag: Die hohe Sonne wird vom Vordach abgehalten. Die Klappe zum Raum ist zu, die Öffnung im Glas oben ist offen: Warme Luft aus dem Spalt zieht nach außen ab, statt den Raum zu heizen.",
+    snacht:"Sommer, Nacht: Kühle Nachtluft strömt durch die Klappen und kühlt die Wand aus. So kann sie am nächsten Tag wieder Wärme aus dem Raum aufnehmen."},
+  solar:{wtag:"Winter, Tag: Die Sonne erwärmt die dunkle Außenseite der Speicherwand. Es gibt keine Luftklappen: Die Wärme wandert nur durch Wärmeleitung langsam durch die Wand.",
+    wnacht:"Winter, Nacht: Die Wärmewelle ist jetzt auf der Innenseite angekommen. Die Wand strahlt Wärme in den Raum, obwohl die Sonne längst untergegangen ist.",
+    stag:"Sommer, Tag: Das Vordach verschattet das Glas. Die Wand bleibt kühl und kann Wärme aus dem Raum aufnehmen. Eine Lüftungsöffnung im Glas verhindert einen Hitzestau.",
+    snacht:"Sommer, Nacht: Durch Lüften wird die Wand nachts entladen."}
+};
+function scene(t){
+  const winter=mode[0]==="w",day=mode.endsWith("tag"),tr=wall==="trombe";
+  const W=760,H=430,gx=300,wx=350,ww=70,top=70,bot=380,vh=36;
+  let s=`<rect x="0" y="0" width="${gx}" height="${H}" fill="${day?"#bfe0f5":"#1d2a44"}" opacity="${day?.35:.55}"/>`;
+  s+=`<rect x="${wx+ww}" y="${top}" width="${W-wx-ww}" height="${bot-top}" fill="var(--warm)" opacity=".06"/>`;
+  s+=`<line x1="0" y1="${bot}" x2="${W}" y2="${bot}" stroke="var(--ink)" stroke-opacity=".5"/>`;
+  // Decke/Dach mit Vordach
+  s+=`<rect x="${gx-(winter?40:110)}" y="${top-16}" width="${W-gx+(winter?40:110)}" height="16" fill="var(--ink)" opacity=".7"/>`;
+  // Sonne und Strahlen
+  if(day){const ang=winter?22:62,sx=gx-260*Math.cos(ang*Math.PI/180)+20,sy=top+20-200*Math.sin(ang*Math.PI/180)+130;
+    const cx=60,cy=winter?150:40;s+=`<circle cx="${cx}" cy="${cy}" r="22" fill="#f5b42a"/>`;
+    const tn=Math.tan(ang*Math.PI/180);
+    for(let k=0;k<6;k++){const yw=top+30+k*50;if(yw>bot-10)break;
+      const shade=!winter&&yw<top+((110)*tn);const x0=cx+20,y0=yw-(wx-cx-20)*tn;
+      const xend=shade?gx-110+((top)-y0)/tn*0:wx,yend=shade?top:yw;
+      if(shade){const xs=cx+20+(top-y0)/tn;s+=`<line x1="${x0}" y1="${y0}" x2="${xs}" y2="${top}" stroke="#f5b42a" stroke-width="2" stroke-dasharray="6 6" stroke-dashoffset="${-t*40}" opacity=".7"/>`}
+      else s+=`<line x1="${x0}" y1="${y0}" x2="${wx}" y2="${yw}" stroke="#f5b42a" stroke-width="2.4" stroke-dasharray="8 6" stroke-dashoffset="${-t*40}"/>`;}
+  }else s+=`<circle cx="70" cy="60" r="14" fill="#e8eef7" opacity=".8"/><circle cx="76" cy="55" r="12" fill="#1d2a44" opacity=".55"/>`;
+  // Glas
+  s+=`<rect x="${gx}" y="${top}" width="6" height="${bot-top}" fill="#cfe8ef" stroke="var(--cold)" stroke-width="1.2"/>`;
+  const glassVent=!winter&&day; // Sommer: obere Öffnung im Glas offen
+  if(glassVent)s+=`<rect x="${gx-1}" y="${top+2}" width="8" height="${vh}" fill="var(--bg)"/>`;
+  // Speicherwand (Temperatur als Farbe, verzögert)
+  const hot=winter?(day?.55:.85):(day?.25:.15);
+  const grad=`<linearGradient id="wg" x1="0" x2="1"><stop offset="0" stop-color="#2b2421"/><stop offset="1" stop-color="${tr||!day?"#7a3b22":"#3a2c26"}" stop-opacity="${hot}"/></linearGradient>`;
+  s=`<defs>${grad}<marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--warm)"/></marker><marker id="ac" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--cold)"/></marker></defs>`+s;
+  s+=`<rect x="${wx}" y="${top}" width="${ww}" height="${bot-top}" fill="url(#wg)"/>`;
+  const ventsOpen=tr&&((winter&&day)||(!winter&&!day));
+  if(tr){[top+6,bot-6-vh].forEach(y=>{s+=`<rect x="${wx-1}" y="${y}" width="${ww+2}" height="${vh}" fill="${ventsOpen?"var(--bg)":"#55504c"}" stroke="var(--ink)" stroke-opacity=".4"/>`;
+      if(!ventsOpen)s+=`<line x1="${wx+4}" y1="${y+vh/2}" x2="${wx+ww-4}" y2="${y+vh/2}" stroke="var(--bad)" stroke-width="2"/>`;});}
+  // Luftbewegung
+  const P=[];
+  if(tr&&winter&&day)P.push({pts:[[325,bot-30],[325,top+24],[wx+ww+40,top+24],[640,top+40],[640,bot-30],[wx+ww+40,bot-24],[325,bot-24]],warm:[0,.55]});
+  if(tr&&!winter&&!day)P.push({pts:[[300,top+24],[325,top+24],[325,bot-30],[wx+ww+40,bot-24],[620,bot-60],[620,top+50],[wx+ww+40,top+24],[325,top+24]],warm:null});
+  if(!winter&&day)P.push({pts:[[325,bot-30],[325,top+24],[gx+3,top+22],[200,top+10]],warm:[0,1]});
+  P.forEach(p=>{const seg=[];let Ltot=0;for(let i=1;i<p.pts.length;i++){const d=Math.hypot(p.pts[i][0]-p.pts[i-1][0],p.pts[i][1]-p.pts[i-1][1]);seg.push(d);Ltot+=d}
+    s+=`<polyline points="${p.pts.map(q=>q.join(",")).join(" ")}" fill="none" stroke="var(--muted)" stroke-dasharray="3 6" opacity=".6"/>`;
+    for(let k=0;k<18;k++){let u=((k/18+t*.08)%1)*Ltot,i=0;while(i<seg.length-1&&u>seg[i]){u-=seg[i];i++}
+      const a=p.pts[i],b=p.pts[i+1],f=u/seg[i],x=a[0]+(b[0]-a[0])*f,y=a[1]+(b[1]-a[1])*f,frac=(k/18+t*.08)%1;
+      const warm=p.warm&&frac>=p.warm[0]&&frac<=p.warm[1];s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${warm?"var(--warm)":"var(--cold)"}" opacity=".85"/>`}});
+  // Wärmeabgabe der Wand in den Raum
+  const radiate=(winter&&!day)||(!tr&&winter&&!day);
+  if(radiate||(!tr&&winter&&day&&false)){for(let k=0;k<5;k++){const y=top+40+k*60,o=(t*30+k*12)%40;s+=`<path d="M ${wx+ww+6+o} ${y} q 8 -8 16 0 t 16 0" fill="none" stroke="var(--warm)" stroke-width="2.4" opacity="${1-o/40}" marker-end="url(#ah)"/>`}}
+  if(!tr&&winter&&day){for(let k=0;k<4;k++){const y=top+60+k*70,o=(t*12+k*9)%ww;s+=`<circle cx="${wx+o}" cy="${y}" r="5" fill="var(--warm)" opacity="${.9-o/ww*.6}"/>`}}
+  // Beschriftung
+  const L=(x,y,txt,anc="middle")=>s+=`<text class="lbl" x="${x}" y="${y}" text-anchor="${anc}" font-size="14" fill="var(--ink)">${txt}</text>`;
+  L(gx+3,bot+22,"Glas");L(wx+ww/2,bot+22,tr?"Speicherwand":"Speicherwand");L(560,bot+22,"Raum");L(150,bot+22,"außen");
+  if(tr)L(wx+ww/2,top-24,ventsOpen?"Klappen offen":"Klappen zu");
+  s+=`<text x="${W-10}" y="${top+24}" text-anchor="end" font-size="13" fill="var(--muted)">${winter?"Winter":"Sommer"} · ${day?"Tag":"Nacht"}</text>`;
+  $("scene").innerHTML=s;
+}
+let tAnim=0,lastTs=0;
+function loop(ts){const dt=lastTs?Math.min(.1,(ts-lastTs)/1000):0;lastTs=ts;if(run)tAnim+=dt;scene(tAnim);requestAnimationFrame(loop)}
+function setTxt(){$("explain").textContent=TXT[wall][mode]}
+document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{wall=b.dataset.w;document.querySelectorAll("[data-w]").forEach(x=>x.setAttribute("aria-pressed",x===b));setTxt()});
+document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll("[data-m]").forEach(x=>x.setAttribute("aria-pressed",x===b));setTxt()});
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Abspielen"};if(!run)$("play").textContent="Abspielen";
+setTxt();requestAnimationFrame(loop);
+
+/* ---------- Verzögerung durch die Wand ---------- */
+const MATS_=[["Beton unbewehrt ρ 2200","Beton unbewehrt",2200],["Stahlbeton ρ 2400","Stahlbeton",null],["Kalksandstein ρ 1800","Kalksandstein",1800],["Vollziegel ρ 1800","Vollziegel",1800],["Vollklinker ρ 2000","Vollklinker",2000]];
+$("mat").innerHTML=MATS_.map((m,i)=>`<option value="${i}">${m[0]}</option>`).join("");
+function delay(){
+  const[,pre,rho]=MATS_[+$("mat").value],m=findMat(pre,rho),d=val("d"),t0=val("t0");
+  const L=[layerFrom(m,d)],dy=dyn(L,.13,.04),tin=(t0+dy.ph)%24,mp=m.rho.v*d/100,Q=mp*(m.c??1000)*10/3.6e6;
+  $("o-d").textContent=`${fmt(d,1)} cm`;$("o-t0").textContent=`${hm(t0)} Uhr`;
+  $("r-ph").textContent=fmt(dy.ph,1);$("r-t").textContent=hm(tin);$("r-q").textContent=fmt(Q,2);
+  $("dinfo").innerHTML=`\\(\\delta = \\sqrt{\\lambda T/(\\pi\\rho c)} = ${n_(dy.lay[0].delta*100,1)}\\,\\mathrm{cm}\\), \\(d/\\delta = ${n_(dy.lay[0].xi,2)}\\). Die Wärme kommt etwa \\(${n_(d/dy.ph,1)}\\,\\mathrm{cm}\\) pro Stunde voran. TAV \\(= ${n_(dy.tav,3)}\\): Von der Schwankung außen kommen innen ${fmt(dy.tav*100,1)} % an.`;typeset($("dinfo"));
+  // Diagramm 48 h
+  const W=760,H=260,x0=50,x1=740,yt=20,yb=220,X=h=>x0+h/48*(x1-x0),Y=v=>yb-v*(yb-yt);
+  let s="";for(let h=0;h<=48;h+=6)s+=`<line x1="${X(h)}" x2="${X(h)}" y1="${yt}" y2="${yb}" stroke="var(--line)"/><text x="${X(h)}" y="${yb+18}" text-anchor="middle" font-size="11" fill="var(--muted)">${String(h%24).padStart(2,"0")}:00</text>`;
+  [[0,"Nacht"],[24,"Nacht"]].forEach(([o])=>{s+=`<rect x="${X(o)}" y="${yt}" width="${X(o+7)-X(o)}" height="${yb-yt}" fill="var(--cold)" opacity=".06"/><rect x="${X(o+18)}" y="${yt}" width="${X(o+24)-X(o+18)}" height="${yb-yt}" fill="var(--cold)" opacity=".06"/>`});
+  const sunv=h=>{const x=((h%24)-(t0-5))/10;return x>0&&x<1?Math.sin(Math.PI*x):0};
+  const inn=h=>.5+.45*Math.cos(2*Math.PI*(h-tin)/24);
+  let a=[],b=[];for(let h=0;h<=48;h+=.25){a.push(`${X(h)},${Y(sunv(h)*.95)}`);b.push(`${X(h)},${Y(inn(h))}`)}
+  s+=`<polyline points="${a.join(" ")}" fill="none" stroke="#f5b42a" stroke-width="3"/><polyline points="${b.join(" ")}" fill="none" stroke="var(--bad)" stroke-width="3"/>`;
+  [t0,t0+24].forEach(h=>{const hi=h+dy.ph;if(hi<=48){s+=`<line x1="${X(h)}" x2="${X(hi)}" y1="${yt+8}" y2="${yt+8}" stroke="var(--ink)" marker-end="url(#ar2)"/><text x="${(X(h)+X(hi))/2}" y="${yt+4}" text-anchor="middle" font-size="11" fill="var(--ink)">φ = ${fmt(dy.ph,1)} h</text>`}});
+  $("delay").innerHTML=`<defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--ink)"/></marker></defs>`+s;
+}
+const hm=t=>`${String(Math.floor(t)).padStart(2,"0")}:${String(Math.round(t%1*60)).padStart(2,"0")}`;
+["mat","d","t0"].forEach(id=>$(id).oninput=delay);delay();
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const t0=pk([12,13,14]),ph=pk([7,8,9,10,11]),d=pk([0.25,0.3,0.35]),rho=pk([2000,2200,2400]),c=1000,dT=pk([5,8,10]);
+  const T=[
+    {kind:"num",q:`Die Sonne erwärmt die Außenseite einer Solarwand am stärksten um ${t0}:00 Uhr. Die Phasenverschiebung beträgt \\(\\varphi = ${ph}\\,\\mathrm{h}\\). Wann gibt die Wand innen am meisten Wärme ab (Uhrzeit)?`,ans:(t0+ph)%24,unit:"Uhr",atol:.01,sol:`\\(${t0} + ${ph} = ${t0+ph}\\) Uhr${t0+ph>=24?`, also ${(t0+ph)%24} Uhr am nächsten Tag`:""}.`},
+    {kind:"num",q:`Eine Betonwand ist \\(d = ${n_(d,2)}\\,\\mathrm{m}\\) dick, \\(\\rho = ${rho}\\,\\mathrm{kg/m^3}\\), \\(c = ${c}\\,\\mathrm{J/(kg\\,K)}\\). Wie viel Wärme speichert 1 m², wenn sie sich um \\(\\Delta T = ${dT}\\,\\mathrm{K}\\) erwärmt (in kWh/m²)?`,ans:d*rho*c*dT/3.6e6,unit:"\\(\\mathrm{kWh/m^2}\\)",tol:.02,sol:`\\(m' = d\\cdot\\rho = ${n_(d*rho,0)}\\,\\mathrm{kg/m^2}\\); \\(Q' = m'\\cdot c\\cdot\\Delta T = ${n_(d*rho*c*dT,0)}\\,\\mathrm{J/m^2} = ${n_(d*rho*c*dT/3.6e6,2)}\\,\\mathrm{kWh/m^2}\\)`},
+    {kind:"sel",q:"Warum werden die Klappen einer Trombe-Wand nachts geschlossen?",opts:["Damit sich der Luftkreislauf nicht umkehrt und den Raum über das kalte Glas abkühlt","Damit keine Insekten hereinkommen","Damit die Wand schneller auskühlt"],ans:0,sol:"Nachts ist das Glas kalt: Die Luft im Spalt kühlt ab, sinkt und würde kalte Luft unten in den Raum schieben."},
+    {kind:"sel",q:"Was unterscheidet eine Solarwand (Speicherwand) von einer Trombe-Wand?",opts:["Die Solarwand hat keine Lüftungsklappen, die Wärme kommt nur durch Leitung","Die Solarwand hat kein Glas","Die Solarwand ist hell gestrichen"],ans:0,sol:"Bei der Trombe-Wand kommt zusätzlich warme Luft über die Klappen sofort in den Raum."},
+    {kind:"sel",q:"Was passiert bei einer doppelt so dicken Speicherwand?",opts:["Die Phasenverschiebung wird größer","Die Phasenverschiebung wird kleiner","Nichts"],ans:0,sol:"Die Welle braucht länger durch die Wand und kommt stärker gedämpft an. Probiere es oben mit dem Regler aus."},
+    {kind:"sel",q:"Wie schützt man eine Trombe-Wand im Sommer vor Überhitzung?",opts:["Vordach gegen die hohe Sonne und Abluftöffnung im Glas","Klappen zum Raum öffnen","Die Wand dunkler streichen"],ans:0,sol:"Die hohe Sommersonne wird vom Vordach abgehalten; warme Luft aus dem Spalt zieht nach außen ab."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+</script>
+</body>
+</html>

@@ -44,6 +44,6 @@ function bindTasks(root,tasks,ids,onScore){
 
 function chips(el,state,key,onchg){el.innerHTML=TOPICS.map(([k,n])=>`<label><input type="checkbox" data-t="${k}" ${state[k]?"checked":""}> ${n}</label>`).join("");
   el.querySelectorAll("input").forEach(c=>c.onchange=()=>{state[c.dataset.t]=c.checked?1:0;store.set(key,state);onchg()})}
-const ansTex=t=>`\\(${n_(t.ans,dig(t))}\\) ${t.unit||""}`;
+const ansTex=t=>`\\(${n_(t.ans,dig(t))}\\)\u202f${t.unit||""}`;
 const dig=t=>/circ|cm/.test(t.unit||"")?1:Math.abs(t.ans)>=100?0:3;
 const solFor=t=>t.kind==="sel"?`Richtig ist: <b>${esc(t.opts[t.ans])}</b>`:`Ergebnis: <b>${ansTex(t)}</b>`;
