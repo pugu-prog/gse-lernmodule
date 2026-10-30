@@ -42,6 +42,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Vier Luftströme</h3><p><b>Außenluft</b> (Au) kommt von draußen, wird im Wärmetauscher erwärmt und strömt als <b>Zuluft</b> (zu) in Wohn- und Schlafräume. Die verbrauchte <b>Abluft</b> (Ab) aus Küche und Bad gibt ihre Wärme ab und verlässt das Haus als <b>Fortluft</b> (Fo).</p></div>
@@ -63,6 +68,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script>
 /* Sättigungsfeuchte x_s in g/kg (Formelsammlung Kapitel 1), linear interpoliert */
 const XS_T=[-20,-15,-10,-5,0,5,10,15,20,25,30,35,40],XS=[0.6,1,1.6,2.5,3.8,5.5,7.7,10.8,14.9,20.3,27.5,37.1,49.5];
@@ -148,6 +154,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["lueftungsgeraet", "So sieht ein Wohnungslüftungsgerät von innen aus: vier Anschlüsse oben, Filter für Außen- und Abluft, der Kreuzstrom-Wärmeübertrager in der Mitte, zwei Ventilatoren und der Kondensatablauf."]]);
 </script>
 </body>
 </html>

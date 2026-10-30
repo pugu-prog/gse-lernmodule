@@ -45,6 +45,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Die Wand als Speicher</h3><p>Jede Schicht nimmt Wärme auf, bevor sie Wärme weitergibt. Wie viel sie aufnehmen kann, hängt von \(\rho \cdot c\) ab, wie schnell die Wärme weiterfließt, von \(\lambda\). Massive Schichten bremsen und speichern die Welle, Dämmstoffe bremsen nur.</p></div>
@@ -67,6 +72,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script src="../assets/bauphysik.js"></script>
 <script>
 /* ---------- Wandaufbauten (innen → außen) ---------- */
@@ -214,6 +220,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["thermografie", "Wärmebild eines Gebäudes in München: Die Kamera misst die Oberflächentemperatur. Wo die Fassade außen wärmer erscheint, fließt mehr Wärme durch die Wand nach draußen."]]);
 </script>
 </body>
 </html>

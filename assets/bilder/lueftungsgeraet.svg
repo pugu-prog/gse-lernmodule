@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" font-family="Archivo, Helvetica, Arial, sans-serif">
+  <!-- Zeichnung: Wohnungslüftungsgerät mit Kreuzstrom-Plattenwärmeübertrager, Frontdeckel abgenommen. GSE-Lernmodule (LTEtt), frei für den Unterricht. -->
+  <defs>
+    <linearGradient id="blech" x1="0" x2="1"><stop offset="0" stop-color="#e9ecec"/><stop offset=".5" stop-color="#f7f8f8"/><stop offset="1" stop-color="#d9dddd"/></linearGradient>
+    <linearGradient id="innen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ccd1d3"/><stop offset="1" stop-color="#b7bdbf"/></linearGradient>
+    <linearGradient id="rohr" x1="0" x2="1"><stop offset="0" stop-color="#9aa3a6"/><stop offset=".45" stop-color="#e3e6e7"/><stop offset="1" stop-color="#8d9699"/></linearGradient>
+    <pattern id="falten" width="8" height="10" patternUnits="userSpaceOnUse"><path d="M0 0 L4 10 L8 0" fill="none" stroke="#b8ad86" stroke-width="1.2"/></pattern>
+    <pattern id="platten" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#8fa0a8" stroke-width="1.4"/></pattern>
+    <marker id="pb" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto"><path d="M0 0L16 8L0 16z" fill="#2563eb"/></marker>
+    <marker id="po" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto"><path d="M0 0L16 8L0 16z" fill="#e8822b"/></marker>
+    <marker id="pr" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto"><path d="M0 0L16 8L0 16z" fill="#c2410c"/></marker>
+    <marker id="pg" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto"><path d="M0 0L16 8L0 16z" fill="#6d7f9c"/></marker>
+  </defs>
+  <rect width="760" height="520" fill="#fbfbfa"/>
+  <!-- Rohrstutzen -->
+  <g>
+    <rect x="152" y="40" width="64" height="62" fill="url(#rohr)"/><ellipse cx="184" cy="40" rx="32" ry="9" fill="#7c8588"/>
+    <rect x="292" y="40" width="64" height="62" fill="url(#rohr)"/><ellipse cx="324" cy="40" rx="32" ry="9" fill="#7c8588"/>
+    <rect x="432" y="40" width="64" height="62" fill="url(#rohr)"/><ellipse cx="464" cy="40" rx="32" ry="9" fill="#7c8588"/>
+    <rect x="572" y="40" width="64" height="62" fill="url(#rohr)"/><ellipse cx="604" cy="40" rx="32" ry="9" fill="#7c8588"/>
+  </g>
+  <!-- Gehäuse -->
+  <rect x="100" y="100" width="590" height="330" rx="8" fill="url(#blech)" stroke="#9aa3a6" stroke-width="2"/>
+  <rect x="122" y="118" width="546" height="294" rx="4" fill="url(#innen)"/>
+  <!-- Filter an Außenluft und Abluft -->
+  <rect x="296" y="128" width="56" height="58" fill="#efe6c2" stroke="#a89c6c"/><rect x="296" y="128" width="56" height="58" fill="url(#falten)"/>
+  <rect x="436" y="128" width="56" height="58" fill="#efe6c2" stroke="#a89c6c"/><rect x="436" y="128" width="56" height="58" fill="url(#falten)"/>
+  <!-- Kreuzstrom-Wärmeübertrager -->
+  <g transform="translate(395 268)">
+    <polygon points="0,-92 92,0 0,92 -92,0" fill="#dfe6e9" stroke="#5f6a66" stroke-width="2.5"/>
+    <polygon points="0,-92 92,0 0,92 -92,0" fill="url(#platten)"/>
+    <polygon points="0,-92 92,0 104,-10 12,-102" fill="#c6d0d4" stroke="#5f6a66" stroke-width="1.5"/>
+    <polygon points="92,0 0,92 12,82 104,-10" fill="#b5c0c5" stroke="#5f6a66" stroke-width="1.5"/>
+  </g>
+  <!-- Ventilatoren -->
+  <g transform="translate(232 352)"><circle r="36" fill="#3e4648"/><circle r="32" fill="#596366"/>
+    <g fill="#9fb0b6"><path d="M0 0 C 10 -28 24 -18 20 -6Z"/><path d="M0 0 C 28 10 18 24 6 20Z"/><path d="M0 0 C -10 28 -24 18 -20 6Z"/><path d="M0 0 C -28 -10 -18 -24 -6 -20Z"/></g><circle r="6" fill="#2b3133"/></g>
+  <g transform="translate(558 352)"><circle r="36" fill="#3e4648"/><circle r="32" fill="#596366"/>
+    <g fill="#9fb0b6"><path d="M0 0 C 10 -28 24 -18 20 -6Z"/><path d="M0 0 C 28 10 18 24 6 20Z"/><path d="M0 0 C -10 28 -24 18 -20 6Z"/><path d="M0 0 C -28 -10 -18 -24 -6 -20Z"/></g><circle r="6" fill="#2b3133"/></g>
+  <!-- Kondensatablauf und Regelung -->
+  <path d="M 395 430 L 395 462 Q 395 478 410 478 L 420 478 Q 432 478 432 466 L 432 456" fill="none" stroke="#7c8588" stroke-width="7" stroke-linecap="round"/>
+  <rect x="620" y="380" width="52" height="34" rx="4" fill="#2f3739"/><circle cx="634" cy="397" r="5" fill="#4ade80"/><rect x="646" y="390" width="20" height="14" rx="2" fill="#5c6a6e"/>
+  <!-- Luftwege: kreuzen sich nur im Wärmeübertrager -->
+  <g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".92">
+    <path d="M 324 58 L 324 200 L 344 218" stroke="#2563eb" marker-end="url(#pb)"/>
+    <path d="M 446 318 L 520 345 L 604 300 L 604 58" stroke="#e8822b" marker-end="url(#po)"/>
+    <path d="M 464 58 L 464 200 L 446 218" stroke="#c2410c" marker-end="url(#pr)"/>
+    <path d="M 344 318 L 270 345 L 184 300 L 184 58" stroke="#6d7f9c" marker-end="url(#pg)"/>
+  </g>
+  <!-- Beschriftung -->
+  <g font-size="15" font-weight="600" text-anchor="middle">
+    <text x="184" y="22" fill="#4a5a75">Fortluft ↑</text><text x="324" y="22" fill="#2563eb">Außenluft ↓</text><text x="464" y="22" fill="#c2410c">Abluft ↓</text><text x="604" y="22" fill="#c56a1c">Zuluft ↑</text>
+  </g>
+  <g font-size="13" fill="#3a4442" text-anchor="middle">
+    <text x="324" y="122">Filter</text><text x="464" y="122">Filter</text>
+    <text x="395" y="390">Kreuzstrom-</text><text x="395" y="405">Wärmeübertrager</text>
+    <text x="232" y="404">Fortluftventilator</text><text x="558" y="404">Zuluftventilator</text>
+    <text x="646" y="430">Regelung</text>
+  </g>
+  <text x="442" y="474" font-size="13" fill="#3a4442">Kondensatablauf mit Siphon</text>
+  <text x="380" y="508" text-anchor="middle" font-size="12" fill="#5f6a66">Wohnungslüftungsgerät, Frontdeckel abgenommen (schematische Zeichnung)</text>
+</svg>

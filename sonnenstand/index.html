@@ -51,6 +51,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Deklination \(\delta = 23{,}45^\circ \cdot \sin\!\left(\frac{360^\circ}{365}(284+n)\right)\)</h3><p>Die Erdachse ist um 23,45° geneigt. Deshalb wandert die Sonne über das Jahr zwischen \(+23{,}45^\circ\) (21. Juni) und \(-23{,}45^\circ\) (21. Dezember). \(n\) ist der Tag im Jahr.</p></div>
@@ -72,6 +77,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script>
 const PHI=49.85,rad=Math.PI/180,deg=180/Math.PI;
 const decl=n=>23.45*Math.sin(rad*360/365*(284+n));
@@ -181,6 +187,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["solargraph", "Ein ganzes Jahr auf einem Foto: Eine Lochkamera hat in Budapest (47,5° N, ähnlich wie Ettelbruck) von Januar bis Dezember 2014 jede Sonnenbahn aufgezeichnet. Oben die hohen Sommerbahnen, unten die flachen Winterbahnen, genau wie im Sonnenbahndiagramm."]]);
 </script>
 </body>
 </html>

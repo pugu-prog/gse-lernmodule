@@ -58,6 +58,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Kollektorwirkungsgrad \(\eta = \eta_0 - \dfrac{k_1\Delta T + k_2\Delta T^2}{E_K}\)</h3><p>\(\Delta T\) ist der Unterschied zwischen mittlerer Kollektortemperatur und Umgebung. Flachkollektor: \(\eta_0 = 0{,}75\), \(k_1 = 3{,}40\), \(k_2 = 0{,}012\). Vakuumröhre: \(0{,}64\), \(0{,}69\), \(0{,}004\). Je kälter der Speicher unten, desto besser arbeitet der Kollektor.</p></div>
@@ -80,6 +85,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script src="../assets/speicher.js"></script>
 <script>
 /* ---------- Daten Ettelbruck ---------- */
@@ -227,6 +233,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["flachkollektor", "Zwei Flachkollektoren auf einem Hausdach in Norddeutschland: Wie im Modul sind sie nach Süden ausgerichtet und etwa 45° geneigt."], ["vakuumroehren", "Vakuum-Röhrenkollektor: Jede Glasröhre ist wie eine Thermoskanne gebaut. Deshalb verliert er bei Kälte weniger Wärme als ein Flachkollektor."], ["frischwasserstation", "Frischwasserstation an einem Pufferspeicher: Der Plattenwärmetauscher erwärmt das Trinkwasser erst beim Zapfen; im Speicher steht nur Heizungswasser."]]);
 </script>
 </body>
 </html>

@@ -50,6 +50,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Direkte und indirekte Gewinne</h3><p>Bei direkten Gewinnen scheint die Sonne durchs Fenster in den Raum: schnell, aber ohne Verzögerung. Bei indirekten Gewinnen erwärmt sie zuerst eine Speicherwand, die die Wärme verzögert abgibt.</p></div>
@@ -71,6 +76,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script src="../assets/bauphysik.js"></script>
 <script>
 /* ---------- Szene ---------- */
@@ -78,12 +84,12 @@ let wall="trombe",mode="wtag",run=!matchMedia("(prefers-reduced-motion: reduce)"
 const TXT={
   trombe:{wtag:"Winter, Tag: Die tief stehende Sonne scheint unter dem Vordach durch das Glas auf die dunkle Wand. Die Luft im Spalt wird warm, steigt auf und strömt oben in den Raum. Unten fließt kühle Raumluft nach. Gleichzeitig speichert die Wand Wärme.",
     wnacht:"Winter, Nacht: Die Klappen sind zu. Die Wand gibt die tagsüber gespeicherte Wärme verzögert über Strahlung und Konvektion an den Raum ab. Offene Klappen würden den Kreislauf umkehren: Die Luft würde am kalten Glas abkühlen und den Raum kühlen.",
-    stag:"Sommer, Tag: Die hohe Sonne wird vom Vordach abgehalten. Die Klappe zum Raum ist zu, die Öffnung im Glas oben ist offen: Warme Luft aus dem Spalt zieht nach außen ab, statt den Raum zu heizen.",
-    snacht:"Sommer, Nacht: Kühle Nachtluft strömt durch die Klappen und kühlt die Wand aus. So kann sie am nächsten Tag wieder Wärme aus dem Raum aufnehmen."},
+    stag:"Sommer, Tag: Das Vordach hält die hohe Sonne ab. Die Klappen zum Raum sind zu. In der Verglasung sind unten und oben Lüftungsöffnungen offen: Die warme Luft im Spalt steigt auf und zieht oben nach außen ab (Kamineffekt), unten strömt Außenluft nach. So staut sich keine Hitze vor der Wand.",
+    snacht:"Sommer, Nacht: Die Öffnungen in der Verglasung bleiben offen, die Klappen zum Raum zu. Kühle Nachtluft strömt durch den Spalt und nimmt Wärme von der Wand mit. Den Raum selbst kühlt man über geöffnete Fenster (Nachtlüftung)."},
   solar:{wtag:"Winter, Tag: Die Sonne erwärmt die dunkle Außenseite der Speicherwand. Es gibt keine Luftklappen: Die Wärme wandert nur durch Wärmeleitung langsam durch die Wand.",
     wnacht:"Winter, Nacht: Die Wärmewelle ist jetzt auf der Innenseite angekommen. Die Wand strahlt Wärme in den Raum, obwohl die Sonne längst untergegangen ist.",
-    stag:"Sommer, Tag: Das Vordach verschattet das Glas. Die Wand bleibt kühl und kann Wärme aus dem Raum aufnehmen. Eine Lüftungsöffnung im Glas verhindert einen Hitzestau.",
-    snacht:"Sommer, Nacht: Durch Lüften wird die Wand nachts entladen."}
+    stag:"Sommer, Tag: Das Vordach verschattet das Glas. Über die Lüftungsöffnungen unten und oben in der Verglasung wird der Spalt hinterlüftet und staut keine Hitze. Die Wand bleibt kühl und kann Wärme aus dem Raum aufnehmen.",
+    snacht:"Sommer, Nacht: Kühle Nachtluft strömt durch die offenen Öffnungen in der Verglasung und kühlt die Wand von außen; zusätzlich werden die Fenster zum Lüften geöffnet."}
 };
 function scene(t){
   const winter=mode[0]==="w",day=mode.endsWith("tag"),tr=wall==="trombe";
@@ -105,21 +111,20 @@ function scene(t){
   }else s+=`<circle cx="70" cy="60" r="14" fill="#e8eef7" opacity=".8"/><circle cx="76" cy="55" r="12" fill="#1d2a44" opacity=".55"/>`;
   // Glas
   s+=`<rect x="${gx}" y="${top}" width="6" height="${bot-top}" fill="#cfe8ef" stroke="var(--cold)" stroke-width="1.2"/>`;
-  const glassVent=!winter&&day; // Sommer: obere Öffnung im Glas offen
-  if(glassVent)s+=`<rect x="${gx-1}" y="${top+2}" width="8" height="${vh}" fill="var(--bg)"/>`;
+  const glassVent=!winter; // Sommer: Zu- und Abluftöffnungen in der Verglasung (unten und oben) offen
+  if(glassVent)[top+2,bot-2-vh].forEach(y=>s+=`<rect x="${gx-1}" y="${y}" width="8" height="${vh}" fill="var(--bg)"/>`);
   // Speicherwand (Temperatur als Farbe, verzögert)
   const hot=winter?(day?.55:.85):(day?.25:.15);
   const grad=`<linearGradient id="wg" x1="0" x2="1"><stop offset="0" stop-color="#2b2421"/><stop offset="1" stop-color="${tr||!day?"#7a3b22":"#3a2c26"}" stop-opacity="${hot}"/></linearGradient>`;
   s=`<defs>${grad}<marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--warm)"/></marker><marker id="ac" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--cold)"/></marker></defs>`+s;
   s+=`<rect x="${wx}" y="${top}" width="${ww}" height="${bot-top}" fill="url(#wg)"/>`;
-  const ventsOpen=tr&&((winter&&day)||(!winter&&!day));
+  const ventsOpen=tr&&winter&&day;   // Klappen zum Raum nur am Wintertag offen
   if(tr){[top+6,bot-6-vh].forEach(y=>{s+=`<rect x="${wx-1}" y="${y}" width="${ww+2}" height="${vh}" fill="${ventsOpen?"var(--bg)":"#55504c"}" stroke="var(--ink)" stroke-opacity=".4"/>`;
       if(!ventsOpen)s+=`<line x1="${wx+4}" y1="${y+vh/2}" x2="${wx+ww-4}" y2="${y+vh/2}" stroke="var(--bad)" stroke-width="2"/>`;});}
   // Luftbewegung
   const P=[];
   if(tr&&winter&&day)P.push({pts:[[325,bot-30],[325,top+24],[wx+ww+40,top+24],[640,top+40],[640,bot-30],[wx+ww+40,bot-24],[325,bot-24]],warm:[0,.55]});
-  if(tr&&!winter&&!day)P.push({pts:[[300,top+24],[325,top+24],[325,bot-30],[wx+ww+40,bot-24],[620,bot-60],[620,top+50],[wx+ww+40,top+24],[325,top+24]],warm:null});
-  if(!winter&&day)P.push({pts:[[325,bot-30],[325,top+24],[gx+3,top+22],[200,top+10]],warm:[0,1]});
+  if(!winter)P.push({pts:[[200,bot-14],[gx+3,bot-20],[325,bot-30],[325,top+24],[gx+3,top+22],[200,top+10]],warm:day?[.25,1]:null});
   P.forEach(p=>{const seg=[];let Ltot=0;for(let i=1;i<p.pts.length;i++){const d=Math.hypot(p.pts[i][0]-p.pts[i-1][0],p.pts[i][1]-p.pts[i-1][1]);seg.push(d);Ltot+=d}
     s+=`<polyline points="${p.pts.map(q=>q.join(",")).join(" ")}" fill="none" stroke="var(--muted)" stroke-dasharray="3 6" opacity=".6"/>`;
     for(let k=0;k<18;k++){let u=((k/18+t*.08)%1)*Ltot,i=0;while(i<seg.length-1&&u>seg[i]){u-=seg[i];i++}
@@ -128,11 +133,13 @@ function scene(t){
   // Wärmeabgabe der Wand in den Raum
   const radiate=(winter&&!day)||(!tr&&winter&&!day);
   if(radiate||(!tr&&winter&&day&&false)){for(let k=0;k<5;k++){const y=top+40+k*60,o=(t*30+k*12)%40;s+=`<path d="M ${wx+ww+6+o} ${y} q 8 -8 16 0 t 16 0" fill="none" stroke="var(--warm)" stroke-width="2.4" opacity="${1-o/40}" marker-end="url(#ah)"/>`}}
+  if(!winter&&!day){for(let k=0;k<4;k++){const y=top+60+k*70,o=(t*20+k*10)%22;s+=`<path d="M ${wx-4-o} ${y} q -5 -6 -10 0" fill="none" stroke="var(--warm)" stroke-width="2.2" opacity="${1-o/22}"/>`}}
   if(!tr&&winter&&day){for(let k=0;k<4;k++){const y=top+60+k*70,o=(t*12+k*9)%ww;s+=`<circle cx="${wx+o}" cy="${y}" r="5" fill="var(--warm)" opacity="${.9-o/ww*.6}"/>`}}
   // Beschriftung
   const L=(x,y,txt,anc="middle")=>s+=`<text class="lbl" x="${x}" y="${y}" text-anchor="${anc}" font-size="14" fill="var(--ink)">${txt}</text>`;
   L(gx+3,bot+22,"Glas");L(wx+ww/2,bot+22,tr?"Speicherwand":"Speicherwand");L(560,bot+22,"Raum");L(150,bot+22,"außen");
   if(tr)L(wx+ww/2,top-24,ventsOpen?"Klappen offen":"Klappen zu");
+  if(glassVent)L(gx-10,top-44,"Öffnungen im Glas offen","end");
   s+=`<text x="${W-10}" y="${top+24}" text-anchor="end" font-size="13" fill="var(--muted)">${winter?"Winter":"Sommer"} · ${day?"Tag":"Nacht"}</text>`;
   $("scene").innerHTML=s;
 }
@@ -185,6 +192,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["trombe-haus", "Trombewand an einem Wohnhaus: Hinter der dunklen Verglasung zwischen den Fenstern liegt die massive Speicherwand."], ["trombe-sommer", "Sommerbetrieb im Schema (französisch): Die warme Luft verlässt den Spalt oben nach außen (<i>sortie air chaud</i>), frische Luft strömt auf der anderen Hausseite herein (<i>entrée air frais</i>). <i>Capteur</i> = Glas mit Speicherwand."], ["trombe-winter", "Winterbetrieb im Schema: Die Luft zwischen Glas und Wand wird warm und strömt über die Klappen in den Raum (<i>sortie air chaud</i>), unten fließt Raumluft zurück."]]);
 </script>
 </body>
 </html>

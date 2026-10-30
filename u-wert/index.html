@@ -151,6 +151,11 @@
     </section>
 
     <section>
+      <h2>So sieht es in echt aus</h2>
+      <div id="echt"></div>
+    </section>
+
+    <section>
       <h2>Erklärung der Größen und Formeln</h2>
       <div class="expl">
         <div><h3>\(\lambda\) – Wärmeleitfähigkeit <span class="u">W/(m·K)</span></h3><p>Materialeigenschaft: Wie viel Wärme fließt durch 1 m² eines 1 m dicken Stoffs, wenn zwischen beiden Seiten 1 K Temperaturunterschied liegt. Kleines λ bedeutet gute Dämmung. Die Wärmeleitgruppe (WLG) ist λ in mW/(m·K): WLG 040 → λ = 0,040.</p></div>
@@ -226,6 +231,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script src="../assets/bauphysik.js"></script>
 <script>
 let db=null,canWrite=false;   // eigene Materialien kommen hier aus bauphysik.js
@@ -611,6 +617,9 @@ const startTab=(location.hash||"").slice(1);
 showTab(startTab);
 
 
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["thermografie", "Wärmebild eines Gebäudes in München: Fenster und schlecht gedämmte Flächen erscheinen außen wärmer, weil dort mehr Wärme verloren geht. Ein großer U-Wert wird so sichtbar."]]);
 </script>
 </body>
 </html>

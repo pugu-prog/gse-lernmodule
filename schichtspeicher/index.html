@@ -49,6 +49,11 @@
   </section>
 
   <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
     <h2>So funktioniert es</h2>
     <div class="expl">
       <div><h3>Warmes Wasser ist leichter</h3><p>Wasser hat bei \(10\,^\circ\mathrm{C}\) eine Dichte von etwa \(999{,}7\,\mathrm{kg/m^3}\), bei \(60\,^\circ\mathrm{C}\) nur \(983\,\mathrm{kg/m^3}\). Das warme Wasser schwimmt oben. Ohne Strömung bleiben die Schichten lange getrennt; nur Wärmeleitung gleicht sie langsam aus.</p></div>
@@ -70,6 +75,7 @@
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
 <script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
 <script src="../assets/speicher.js"></script>
 <script>
 let tk,simT=0,run=!matchMedia("(prefers-reduced-motion: reduce)").matches,last=0,flowT=0;
@@ -152,6 +158,9 @@ function quiz(){
 }
 $("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
 quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["speicher-schnitt", "Aufgeschnittener Speicher auf einer Messe: Rot oben ist warmes, blau unten kaltes Wasser. Die dicke Dämmung hält die Wärme im Speicher."], ["schichtenlanze", "Schichtspeicher mit Schichtenlanze (Messemodell): Das gelochte Rohr in der Mitte lässt das warme Wasser in der passenden Höhe austreten; die Farben zeigen die Temperaturschichten."]]);
 </script>
 </body>
 </html>
