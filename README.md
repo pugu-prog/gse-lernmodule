@@ -18,4 +18,4 @@ Gemeinsam genutzt: `assets/base.css` (Design), `assets/core.js` (Zahlen, MathJax
 2. In `index.html` (Startseite) im Array `KAP` einen Eintrag ergänzen.
 
 ## Lehrkraft-Bereich
-Der Inhalt liegt nur verschlüsselt als `lehrer/lehrer.enc.json` im Repository (AES-256-GCM, Schlüssel per PBKDF2-SHA256 aus dem Passwort). Die unverschlüsselte Quelle bleibt lokal; neu verschlüsseln mit `python3 werkzeug/verschluesseln.py`.
+Der Inhalt liegt nur verschlüsselt als `lehrer/lehrer.enc.json` im Repository (AES-256-GCM, Schlüssel per PBKDF2-SHA256 aus dem Passwort). Die unverschlüsselte Quelle bleibt lokal; Passwort setzen oder ändern: lokal Doppelklick auf `Lehrer-Passwort setzen.command` (Dialogfenster, lädt die verschlüsselte Datei automatisch hoch; Skript `werkzeug/passwort_setzen.py`).
