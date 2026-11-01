@@ -1,6 +1,6 @@
 # GSE-Lernmodule
 
-Interaktive Lernmodule für **Sciences Environnementales** am Lycée Technique d'Ettelbruck: rechnen, simulieren, üben. Reines HTML/JavaScript, keine Anmeldung, läuft auf jedem Gerät.
+Interaktive Lernmodule für **Sciences Environnementales** und **Smart Technologies** am Lycée Technique d'Ettelbruck: rechnen, simulieren, üben. Reines HTML/JavaScript, keine Anmeldung, läuft auf jedem Gerät.
 
 | Ordner | Modul |
 |---|---|

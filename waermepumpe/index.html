@@ -113,7 +113,7 @@
     <div id="quiz"></div>
     <div class="row"><button id="qnew">Neue Fragen</button></div>
   </section>
-  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Formeln: ENTEC-Formelsammlung 26/27, Kapitel 3 · Datenblätter, Feldtest, Betriebsweisen: Skript „Wärme erzeugen“, Kap. 2 · Temperaturen: ERA5 über Open-Meteo</span></footer>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales &amp; Smart Technologies · LTEtt</span><span>Formeln: ENTEC-Formelsammlung 26/27, Kapitel 3 · Datenblätter, Feldtest, Betriebsweisen: Skript „Wärme erzeugen“, Kap. 2 · Temperaturen: ERA5 über Open-Meteo</span></footer>
 </div>
 <script src="../assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
@@ -271,7 +271,7 @@ function yearUpdate(){
   let h=`<p class="hd">Jahresbilanz der Wärmepumpe</p>`;
   h+=M(`\\mathrm{JAZ} = \\beta = \\frac{Q_{WP}}{W_{el,V+Hilf}} = \\frac{${n_(y.Qwp,0)}\\,\\mathrm{kWh}}{${n_(y.Wv,0)} + ${n_(y.Wh,0)}\\,\\mathrm{kWh}} = \\mathbf{${n_(y.jaz,2)}}`,`Feldtest Fraunhofer: ${y.s==="L"?"Luft-Wasser 2,6 bis 3,0":"Sole-Wasser 3,3 bis 3,8"}`);
   if(y.mode==="me")h+=M(`\\frac{Q_{WP} + Q_{Stab}}{W_{el,V+Hilf} + W_{Stab}} = \\frac{${n_(y.Qwp+y.Qz,0)}}{${n_(y.Wv+y.Wh+y.Wz,0)}} = ${n_((y.Qwp+y.Qz)/(y.Wv+y.Wh+y.Wz),2)}`,"mit Heizstab (1 kWh Strom = 1 kWh Wärme)");
-  h+=`<p class="c" style="margin:8px 0 0;line-height:1.5">Modellannahmen: Heizleistung linear von \\(\\dot Q_{HL}\\) bei der Normaußentemperatur bis 0 an der Heizgrenze (\\(20/15\\,^\\circ\\mathrm{C}\\) wie bei den Heizgradtagen); Heizkurve von \\(28\\,^\\circ\\mathrm{C}\\) bis \\(${y.vlmax}\\,^\\circ\\mathrm{C}\\); \\(\\varepsilon = ${n_(y.eta,2)}\\cdot\\varepsilon_C\\); Leistung der Luft-WP sinkt um etwa 3,7 % je Kelvin (Datenblatt WP 1); Hilfsantriebe ${fmt(SRC[y.s].ph,2)} kW bei Volllast. Nicht enthalten: Warmwasser, Abtauen, Takten, Speicherverluste. Echte Anlagen liegen daher meist unter dem Modell. Die Normaußentemperatur ist hier frei wählbar; den gültigen Wert für Luxemburg im Unterricht festlegen.</p>`;
+  h+=`<p class="c" style="margin:8px 0 0;line-height:1.5">Modellannahmen: Heizleistung linear von \\(\\dot Q_{HL}\\) bei der Normaußentemperatur bis 0 an der Heizgrenze (\\(20/15\\,^\\circ\\mathrm{C}\\) wie bei den Heizgradtagen); Heizkurve von \\(28\\,^\\circ\\mathrm{C}\\) bis \\(${y.vlmax}\\,^\\circ\\mathrm{C}\\); \\(\\varepsilon = ${n_(y.eta,2)}\\cdot\\varepsilon_C\\); Leistung der Luft-WP sinkt um etwa 3,7 % je Kelvin (Datenblatt WP 1); Hilfsantriebe ${fmt(SRC[y.s].ph,2)} kW bei Volllast; Normaußentemperatur \\(-10\\,^\\circ\\mathrm{C}\\) wie im U-Wert-Rechner. Nicht enthalten: Warmwasser, Abtauen, Takten, Speicherverluste. Echte Anlagen liegen daher meist unter dem Modell.</p>`;
   $("ycalc").innerHTML=h;typeset($("ycalc"));yearDraw(y);
 }
 $("yr").innerHTML+=Object.keys(JDLY).map(k=>`<option value="${k}">${k} (kältester Tag ${fmt(JDLY[k][0],1)} °C)</option>`).join("");
