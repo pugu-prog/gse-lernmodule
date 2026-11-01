@@ -166,3 +166,9 @@ canvas{width:100%;height:auto;display:block;border-radius:8px;background:var(--b
 .fotos img{width:100%;height:240px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#fff;display:block}
 .fotos figcaption{font-size:13px;line-height:1.45;max-width:60ch}
 .fotos .credit{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+/* Logos LTEtt, GSE, Smart Technologies: weiße Karte, damit sie auch im Dunkelmodus lesbar bleiben */
+.logos{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;width:fit-content;max-width:100%;box-sizing:border-box}
+.logos img{display:block;height:56px;width:auto;max-width:100%}
+.logos img.rund{height:72px}
+.foot .logos{flex-basis:100%;padding:6px 12px;gap:8px 14px}
+.foot .logos img{height:34px} .foot .logos img.rund{height:44px}

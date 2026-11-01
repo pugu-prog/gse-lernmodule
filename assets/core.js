@@ -47,3 +47,8 @@ function chips(el,state,key,onchg){el.innerHTML=TOPICS.map(([k,n])=>`<label><inp
 const ansTex=t=>`\\(${n_(t.ans,dig(t))}\\)\u202f${t.unit||""}`;
 const dig=t=>/circ|cm/.test(t.unit||"")?1:Math.abs(t.ans)>=100?0:3;
 const solFor=t=>t.kind==="sel"?`Richtig ist: <b>${esc(t.opts[t.ans])}</b>`:`Ergebnis: <b>${ansTex(t)}</b>`;
+
+/* ---------- Logos im Fuß jeder Modulseite ---------- */
+function fussLogos(){const f=document.querySelector("footer.foot");if(!f||f.querySelector(".logos"))return;
+  f.insertAdjacentHTML("afterbegin",`<div class="logos"><img src="../assets/logos/ltett.png" alt="Lycée Technique d'Ettelbruck"><img class="rund" src="../assets/logos/gse.jpg" alt="Sciences Environnementales"><img src="../assets/logos/smart-technologies.jpg" alt="Smart Technologies"></div>`)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fussLogos);else fussLogos();
