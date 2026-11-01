@@ -126,5 +126,37 @@
   "lizenz": "gemeinfrei (Public Domain)",
   "lizenzUrl": "",
   "quelle": "https://commons.wikimedia.org/wiki/File:Erdwaermesondenbohrung01.JPG"
+ },
+ "vianden-oberbecken": {
+  "datei": "vianden-oberbecken.jpg",
+  "titel": "PSW Vianden Oberbecken.jpg",
+  "autor": "LSDSL",
+  "lizenz": "CC BY-SA 3.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:PSW_Vianden_Oberbecken.jpg"
+ },
+ "grevenmacher-staustufe": {
+  "datei": "grevenmacher-staustufe.jpg",
+  "titel": "Grevenmacher Staustufe.JPG",
+  "autor": "Meffo",
+  "lizenz": "CC BY 3.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by/3.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Grevenmacher_Staustufe.JPG"
+ },
+ "kaplan-turbine": {
+  "datei": "kaplan-turbine.jpg",
+  "titel": "Kaplan Turbine.JPG",
+  "autor": "Reinraum",
+  "lizenz": "CC0",
+  "lizenzUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Kaplan_Turbine.JPG"
+ },
+ "pumpturbine": {
+  "datei": "pumpturbine.jpg",
+  "titel": "Coo-Trois-Ponts, Turbine on display.jpg",
+  "autor": "Olivier Cleynen",
+  "lizenz": "CC BY 4.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by/4.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Coo-Trois-Ponts,_Turbine_on_display.jpg"
  }
 }

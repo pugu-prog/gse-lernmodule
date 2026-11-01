@@ -118,6 +118,34 @@ const BILDER={
 "lizenz": "gemeinfrei (Public Domain)",
 "lizenzUrl": "",
 "quelle": "https://commons.wikimedia.org/wiki/File:Erdwaermesondenbohrung01.JPG"
+},
+"vianden-oberbecken": {
+"datei": "vianden-oberbecken.jpg",
+"autor": "LSDSL",
+"lizenz": "CC BY-SA 3.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:PSW_Vianden_Oberbecken.jpg"
+},
+"grevenmacher-staustufe": {
+"datei": "grevenmacher-staustufe.jpg",
+"autor": "Meffo",
+"lizenz": "CC BY 3.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by/3.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:Grevenmacher_Staustufe.JPG"
+},
+"kaplan-turbine": {
+"datei": "kaplan-turbine.jpg",
+"autor": "Reinraum",
+"lizenz": "CC0",
+"lizenzUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+"quelle": "https://commons.wikimedia.org/wiki/File:Kaplan_Turbine.JPG"
+},
+"pumpturbine": {
+"datei": "pumpturbine.jpg",
+"autor": "Olivier Cleynen",
+"lizenz": "CC BY 4.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by/4.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:Coo-Trois-Ponts,_Turbine_on_display.jpg"
 }
 };
 ["trombe-sommer","trombe-winter","lueftungsgeraet","solargraph"].forEach(k=>BILDER[k].fit=1);   // ganz zeigen statt zuschneiden

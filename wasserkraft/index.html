@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wasserkraft · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+[hidden]{display:none!important}
+.simbox>*{min-width:0} #calc .m,#sinfo{overflow-x:auto;max-width:100%}
+#scene text{font-family:var(--f-mono)} #scene .lbl{font-family:var(--f-display)}
+.cmp{min-width:560px} .cmp td:first-child{color:var(--muted);font-size:13px}
+.tl{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--line);position:relative}
+.tl span{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;white-space:nowrap;overflow:hidden}
+.tl i{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink);border-radius:2px}
+.tlx{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Wasserkraft: Laufwasser- und Pumpspeicherkraftwerk</h1>
+      <p class="sub">Beide nutzen die Lageenergie des Wassers. Das Laufwasserkraftwerk an der Mosel liefert rund um die Uhr Strom aus dem Fluss. Das Pumpspeicherkraftwerk in Vianden speichert Strom, indem es Wasser bergauf pumpt.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Animation</h2>
+    <div class="playbar">
+      <span class="modes" role="group" aria-label="Kraftwerk"><button data-k="lauf" aria-pressed="true">Laufwasserkraftwerk (Mosel)</button><button data-k="psw" aria-pressed="false">Pumpspeicherkraftwerk (Vianden)</button></span>
+      <button id="play">Pause</button>
+    </div>
+    <div class="playbar" id="pswbar" hidden>
+      <span class="modes" role="group" aria-label="Betrieb"><button data-b="auto" aria-pressed="true">Tagesablauf</button><button data-b="T" aria-pressed="false">Turbinenbetrieb</button><button data-b="P" aria-pressed="false">Pumpbetrieb</button></span>
+    </div>
+    <div class="ctrls" id="laufctrl">
+      <label>Abfluss der Mosel \(Q\) <output id="o-q"></output><input type="range" id="q" min="20" max="1400" step="10" value="110"></label>
+      <label>Fallhöhe bei normalem Abfluss \(h_0\) <output id="o-h"></output><input type="range" id="h0" min="2" max="9" step="0.5" value="4"></label>
+    </div>
+    <svg id="scene" viewBox="0 0 760 430" width="100%" role="img" aria-label="Schnitt durch ein Wasserkraftwerk mit Wasserströmung"></svg>
+    <div id="tlbox" hidden>
+      <div class="tl" id="tl"></div>
+      <div class="tlx"><span>0 Uhr</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <p class="callout" id="explain"></p>
+    <p class="info" id="sinfo"></p>
+  </section>
+
+  <section class="simbox">
+    <h2>Rechner: Wie viel Strom passt in den Speicher?</h2>
+    <div class="ctrls">
+      <label>nutzbares Volumen Oberbecken \(V\) <output id="o-v"></output><input type="range" id="v" min="0.5" max="12" step="0.01" value="6.84"></label>
+      <label>mittlere Fallhöhe \(h\) <output id="o-hp"></output><input type="range" id="hp" min="50" max="800" step="5" value="280"></label>
+      <label>Turbinenleistung \(P_T\) <output id="o-pt"></output><input type="range" id="pt" min="100" max="2000" step="2" value="1294"></label>
+      <label>Wirkungsgrad Turbine \(\eta_T\) <output id="o-et"></output><input type="range" id="et" min="0.8" max="0.95" step="0.01" value="0.9"></label>
+      <label>Wirkungsgrad Pumpe \(\eta_P\) <output id="o-ep"></output><input type="range" id="ep" min="0.8" max="0.95" step="0.01" value="0.88"></label>
+    </div>
+    <div class="row" style="margin-top:0"><button id="vianden">Werte Vianden einsetzen</button></div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Strom beim Entleeren \(E_{ab}\)</span><span class="val" id="r-eab">–</span><span class="unit">\(\mathrm{GWh}\)</span></div>
+      <div class="result"><span class="lab">Strom zum Füllen \(E_{auf}\)</span><span class="val dp" id="r-eauf">–</span><span class="unit">\(\mathrm{GWh}\)</span></div>
+      <div class="result"><span class="lab">Gesamtwirkungsgrad \(\eta_{ges}\)</span><span class="val" id="r-eges">–</span><span class="unit">%</span></div>
+      <div class="result"><span class="lab">Volllast bis leer \(t\)</span><span class="val" id="r-t">–</span><span class="unit">\(\mathrm{h}\)</span></div>
+    </div>
+    <div id="calc"></div>
+  </section>
+
+  <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl" id="expl">
+      <div><h3>Lageenergie wird Strom</h3><p>Wasser der Masse \(m\), das um die Höhe \(h\) fällt, gibt die Energie \(E = m \cdot g \cdot h\) ab. Pro Sekunde fließt der Volumenstrom \(Q\), also die Masse \(\rho \cdot Q\). Daraus folgt die Leistung</p><div class="eq"><div class="m">\[P = \eta \cdot \rho \cdot g \cdot Q \cdot h\]</div></div><p>mit \(\rho = 1000\,\mathrm{kg/m^3}\) und \(g = 9{,}81\,\mathrm{m/s^2}\).</p></div>
+      <div><h3>Laufwasserkraftwerk</h3><p>Ein Wehr staut den Fluss um wenige Meter auf. Das Wasser fließt durch einen Rechen, der Treibgut zurückhält, zur Turbine und über das Saugrohr ins Unterwasser. Es gibt kaum Speicher: Das Kraftwerk nutzt den Abfluss, der gerade kommt, und läuft Tag und Nacht (Grundlast). Schleuse und Fischtreppe gehören mit zur Staustufe.</p></div>
+      <div><h3>Kaplan-Turbine</h3><p>Bei kleiner Fallhöhe und großem Volumenstrom nimmt man Kaplan-Turbinen. Ihre Schaufeln lassen sich verstellen, so arbeiten sie auch bei wechselndem Abfluss gut. Mehr Wasser als der Ausbaudurchfluss \(Q_A\) passt nicht durch die Turbinen und fließt ungenutzt über das Wehr.</p></div>
+      <div><h3>Hochwasser</h3><p>Bei Hochwasser steigt das Unterwasser stärker als das Oberwasser. Die Fallhöhe wird kleiner, die Leistung sinkt trotz viel Wasser. Bei starkem Hochwasser wird abgeschaltet: 2024 stand das Kraftwerk Grevenmacher 5,5 Tage und Palzem 22,5 Tage still (SEO-Jahresbericht 2024).</p></div>
+      <div><h3>Pumpspeicherkraftwerk</h3><p>Gibt es mehr Strom als gebraucht wird, zum Beispiel nachts oder mittags bei viel Solarstrom, pumpt es Wasser ins Oberbecken. Wird viel Strom gebraucht, fließt das Wasser durch die Turbinen zurück. Die Maschine ist umkehrbar: Pumpturbine und Motorgenerator. Volle Leistung ist in wenigen Minuten erreicht.</p></div>
+      <div><h3>Speicher, kein Kraftwerk im eigentlichen Sinn</h3><p>Ein Pumpspeicher verbraucht mehr Strom, als er zurückgibt. Er erzeugt keine Energie, er verschiebt sie zeitlich:</p><div class="eq"><div class="m">\[\eta_{ges} = \eta_P \cdot \eta_T \approx 0{,}88 \cdot 0{,}90 \approx 0{,}79\]</div></div><p>Gespeichert ist \(E = \eta_T \cdot \rho \cdot g \cdot V \cdot h\).</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Vergleich</h2>
+    <div class="tbl"><table class="cmp">
+      <tr><th></th><th>Laufwasserkraftwerk</th><th>Pumpspeicherkraftwerk</th></tr>
+      <tr><td>Beispiel</td><td>Stadtbredimus–Palzem (Mosel)</td><td>Vianden (Our)</td></tr>
+      <tr><td>Fallhöhe \(h\)</td><td>\(4\,\mathrm{m}\)</td><td>im Mittel \(280\,\mathrm{m}\)</td></tr>
+      <tr><td>Leistung</td><td>\(4{,}5\,\mathrm{MW}\) (Grevenmacher \(7{,}8\,\mathrm{MW}\))</td><td>\(1294\,\mathrm{MW}\) Turbine, \(1046\,\mathrm{MW}\) Pumpe</td></tr>
+      <tr><td>entscheidende Größe</td><td>großer Volumenstrom \(Q\)</td><td>große Fallhöhe \(h\)</td></tr>
+      <tr><td>Turbine</td><td>Kaplan</td><td>Francis-Pumpturbine</td></tr>
+      <tr><td>Rolle im Netz</td><td>Erzeuger, Grundlast</td><td>Speicher, Spitzenlast und Regelenergie</td></tr>
+      <tr><td>regelbar</td><td>kaum, hängt vom Fluss ab</td><td>sehr gut, in Minuten</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales &amp; Smart Technologies · LTEtt</span><span>Daten: SEO Jahresfinanzberichte 2023 und 2024; Wikipedia „Pumpspeicherwerk Vianden“ und „Staustufe Stadtbredimus–Palzem“</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
+<script>
+const RHO=1000,G=9.81,ETA_L=0.88,PA_L=4.5e6;   // Palzem: 4,5 MW; Wirkungsgrad angenommen
+let kw="lauf",run=!matchMedia("(prefers-reduced-motion: reduce)").matches,tAnim=0,lastTs=0;
+const WATER="#3b82c4";
+/* Partikel entlang eines Polygonzugs */
+function along(pts,n,phase,r,col,op=.85){
+  const seg=[];let L=0;for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(d);L+=d}
+  let s="";for(let k=0;k<n;k++){let u=(((k/n+phase)%1)+1)%1*L,i=0;while(i<seg.length-1&&u>seg[i]){u-=seg[i];i++}
+    const a=pts[i],b=pts[i+1],f=u/seg[i];s+=`<circle cx="${(a[0]+(b[0]-a[0])*f).toFixed(1)}" cy="${(a[1]+(b[1]-a[1])*f).toFixed(1)}" r="${r}" fill="${col}" opacity="${op}"/>`}
+  return s;
+}
+const L_=(x,y,t,anc="middle",sz=13,col="var(--ink)")=>`<text class="lbl" x="${x}" y="${y}" text-anchor="${anc}" font-size="${sz}" fill="${col}">${t}</text>`;
+const defs=`<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--ink)"/></marker><marker id="aw" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#f5b42a"/></marker></defs>`;
+function rotor(cx,cy,ang,rx=26){ // Laufrad von der Seite: Schaufeln laufen um
+  let s=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="7" fill="none" stroke="var(--ink)" stroke-opacity=".35"/>`;
+  for(let k=0;k<4;k++){const a=ang+k*Math.PI/2,x=cx+rx*.85*Math.cos(a),y=cy+5*Math.sin(a),front=Math.sin(a)>0;
+    s+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2603c" stroke-width="${front?6:4}" stroke-linecap="round" opacity="${front?1:.5}"/>`}
+  return s+`<circle cx="${cx}" cy="${cy}" r="5" fill="var(--ink)"/>`;
+}
+
+/* ---------- Laufwasserkraftwerk ---------- */
+function laufState(){
+  const Q=val("q"),h0=val("h0"),QA=PA_L/(ETA_L*RHO*G*4);       // Ausbaudurchfluss aus 4,5 MW bei 4 m
+  // vereinfachte Annahme: ab 2·Q_A steigt das Unterwasser, bei 10·Q_A ist die Fallhöhe aufgebraucht
+  const h=h0*Math.max(0,Math.min(1,1-(Q-2*QA)/(8*QA)));
+  const aus=h<1;const QT=aus?0:Math.min(Q,QA),QU=Q-QT,P=ETA_L*RHO*G*QT*h;
+  return{Q,h0,h,QA,QT,QU,P,aus};
+}
+function sceneLauf(t){
+  const S=laufState(),W=760,yO=130,hpx=Math.max(4,S.h*18),yU=yO+hpx,bot=385,kx0=330,kx1=452;
+  const yU0=yO+S.h0*18;
+  let s=defs+`<rect x="0" y="0" width="${W}" height="${bot}" fill="#bfe0f5" opacity=".18"/>`;
+  // Wasser Oberwasser / Unterwasser
+  s+=`<rect x="0" y="${yO}" width="${kx0}" height="${bot-yO}" fill="${WATER}" opacity=".35"/>`;
+  s+=`<rect x="${kx1}" y="${yU}" width="${W-kx1}" height="${bot-yU}" fill="${WATER}" opacity=".35"/>`;
+  s+=`<line x1="0" y1="${yO}" x2="${kx0}" y2="${yO}" stroke="${WATER}" stroke-width="2.5"/><line x1="${kx1}" y1="${yU}" x2="${W}" y2="${yU}" stroke="${WATER}" stroke-width="2.5"/>`;
+  s+=`<rect x="0" y="${bot}" width="${W}" height="${430-bot}" fill="#8a7a64" opacity=".5"/>`;
+  // Krafthaus (Beton) mit Wasserweg
+  s+=`<rect x="${kx0}" y="40" width="${kx1-kx0}" height="${bot-40}" fill="#9aa3a0"/>`;
+  s+=`<rect x="${kx0+8}" y="52" width="${kx1-kx0-16}" height="70" fill="var(--panel)" opacity=".9"/>`;
+  const way=[[kx0,165],[392,165],[420,232],[420,296],[kx1,286],[kx1,370],[392,370],[372,318],[372,252],[kx0,300]];
+  s+=`<polygon points="${way.map(p=>p.join(",")).join(" ")}" fill="${WATER}" opacity=".55"/>`;
+  for(let x=kx0+3;x<=kx0+9;x+=3)s+=`<line x1="${x}" y1="165" x2="${x}" y2="300" stroke="var(--ink)" stroke-width="1.4"/>`;
+  // Welle, Generator, Laufrad
+  const rate=S.QT/S.QA;
+  s+=`<line x1="396" y1="84" x2="396" y2="300" stroke="var(--ink)" stroke-width="4"/>`;
+  s+=`<rect x="374" y="64" width="44" height="40" rx="5" fill="${S.aus?"#7c8784":"var(--accent)"}"/><text class="lbl" x="396" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">G</text>`;
+  s+=rotor(396,300,t*7*rate);
+  // Wasserteilchen durch die Turbine
+  if(S.QT>0)s+=along([[0,230],[kx0,232],[375,240],[396,292],[412,330],[kx1,328],[620,yU+(bot-yU)*.55],[W,yU+(bot-yU)*.55]],Math.round(10+22*rate),t*.12*rate,4,WATER);
+  // Überlauf über das Wehr (neben dem Krafthaus)
+  if(S.QU>0){const n=Math.min(30,6+Math.round(S.QU/40));
+    s+=`<path d="M ${kx0-30} ${yO} L ${kx0} ${yO-4} L ${kx1} ${yO-4} Q ${kx1+20} ${yO} ${kx1+28} ${yU}" fill="none" stroke="${WATER}" stroke-width="${Math.min(14,2+S.QU/60)}" opacity=".35"/>`;
+    s+=along([[kx0-60,yO+4],[kx0,yO-4],[kx1,yO-4],[kx1+26,yU+4],[kx1+120,yU+10]],n,t*.18,3.2,WATER,.7);
+    s+=L_(kx0-12,yO-26,"Überlauf über das Wehr →","end",12,WATER);}
+  // Fallhöhe
+  s+=`<line x1="${kx1}" y1="${yO}" x2="640" y2="${yO}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+  s+=`<line x1="620" y1="${yO+2}" x2="620" y2="${yU-2}" stroke="var(--ink)" marker-end="url(#ah)"/><line x1="620" y1="${yU-2}" x2="620" y2="${yO+2}" stroke="var(--ink)" marker-end="url(#ah)"/>`;
+  s+=L_(630,(yO+yU)/2+4,`h = ${fmt(S.h,1)} m`,"start",13);
+  if(S.h<S.h0-.05)s+=`<line x1="${kx1}" y1="${yU0}" x2="${W}" y2="${yU0}" stroke="${WATER}" stroke-dasharray="3 5" opacity=".7"/>`+L_(W-8,yU0+16,"Unterwasser bei normalem Abfluss","end",11,"var(--muted)");
+  // Leitung und Strom
+  s+=`<path d="M 418 74 H 520 L 560 30 H ${W}" fill="none" stroke="var(--muted)" stroke-width="2"/>`;
+  if(S.P>0)s+=along([[418,74],[520,74],[560,30],[W,30]],Math.round(4+S.P/4.5e5),t*.25,3.5,"#f5b42a",1);
+  s+=L_(W-8,22,S.aus?"kein Strom":`${fmt(S.P/1e6,2)} MW ins Netz`,"end",13);
+  // Beschriftung
+  s+=L_(150,yO-10,"Oberwasser (Stau)");s+=L_(kx1+12,yU+20,"Unterwasser","start");
+  s+=L_(kx0-6,190,"Rechen","end",12);s+=L_(kx0-6,304,"Kaplan-Turbine →","end",12);s+=L_(kx1+8,360,"Saugrohr","start",12);
+  s+=L_(kx0-6,78,"Generator →","end",12);
+  s+=L_(150,bot+30,"Fluss →","middle",12,"var(--muted)");
+  s+=`<text x="10" y="22" font-size="12" fill="var(--muted)">Höhen überhöht dargestellt</text>`;
+  if(S.aus)s+=`<rect x="250" y="190" width="260" height="34" rx="6" fill="var(--bad)"/>`+L_(380,212,"Hochwasser: Kraftwerk abgeschaltet","middle",13,"#fff");
+  $("scene").innerHTML=s;
+}
+function infoLauf(){
+  const S=laufState();
+  $("o-q").textContent=`${fmt(S.Q,0)} m³/s`;$("o-h").textContent=`${fmt(S.h0,1)} m`;
+  $("tiles").innerHTML=tile("Durch die Turbinen \\(Q_T\\)",fmt(S.QT,0),"\\(\\mathrm{m^3/s}\\)")+tile("Über das Wehr",fmt(S.QU,0),"\\(\\mathrm{m^3/s}\\)",1)+tile("Fallhöhe \\(h\\)",fmt(S.h,2),"\\(\\mathrm{m}\\)")+tile("Leistung \\(P\\)",fmt(S.P/1e6,2),"\\(\\mathrm{MW}\\)");
+  $("explain").textContent=S.aus?"Hochwasser: Das Unterwasser ist so hoch gestiegen, dass kaum noch Fallhöhe bleibt. Das Kraftwerk wird abgeschaltet, das ganze Wasser fließt über das geöffnete Wehr."
+    :S.QU>0&&S.h<S.h0-.05?"Hochwasser: Es kommt viel mehr Wasser, als durch die Turbinen passt. Gleichzeitig steigt das Unterwasser und die Fallhöhe sinkt. Darum liefert das Kraftwerk jetzt weniger als bei normalem Abfluss."
+    :S.QU>0?"Es kommt mehr Wasser, als durch die Turbinen passt (Ausbaudurchfluss erreicht). Die Turbinen laufen mit voller Leistung, der Rest fließt ungenutzt über das Wehr."
+    :"Normaler Abfluss: Das ganze Wasser läuft durch den Rechen zur Kaplan-Turbine. Die Leistung folgt direkt dem Abfluss des Flusses. Speichern kann das Kraftwerk kaum.";
+  $("sinfo").innerHTML=`\\(P = \\eta\\cdot\\rho\\cdot g\\cdot Q_T\\cdot h = ${n_(ETA_L,2)}\\cdot 1000\\cdot 9{,}81\\cdot ${n_(S.QT,0)}\\cdot ${n_(S.h,2)} = ${n_(S.P/1e6,2)}\\,\\mathrm{MW}\\). Ausbaudurchfluss \\(Q_A \\approx ${n_(S.QA,0)}\\,\\mathrm{m^3/s}\\), berechnet aus \\(4{,}5\\,\\mathrm{MW}\\) und \\(4\\,\\mathrm{m}\\) (Palzem) mit angenommenem \\(\\eta = ${n_(ETA_L,2)}\\). Das Absinken der Fallhöhe bei Hochwasser ist vereinfacht angenommen.`;
+  typeset([$("tiles"),$("sinfo")]);
+}
+const tile=(lab,v,u,dp)=>`<div class="result"><span class="lab">${lab}</span><span class="val${dp?" dp":""}">${v}</span><span class="unit">${u}</span></div>`;
+
+/* ---------- Pumpspeicherkraftwerk ---------- */
+// vereinfachter Tagesablauf (Beispiel): 0 = Stillstand, T = Turbine, P = Pumpe
+const PLAN=[[0,6,"P","Nachts wenig Bedarf: Strom ist übrig, es wird gepumpt."],[6,7,0,"Morgens: Bereitschaft."],[7,10,"T","Morgenspitze: viel Bedarf, Strom wird erzeugt."],[10,11,0,"Bereitschaft."],[11,15,"P","Mittags viel Solarstrom im Netz: Überschuss, es wird gepumpt."],[15,17,0,"Bereitschaft."],[17,22,"T","Abendspitze: viel Bedarf, Strom wird erzeugt."],[22,24,0,"Bereitschaft vor der Nacht."]];
+const PT=1294,PP=1046,EMAX=4.7;  // MW, MW, GWh (≈ 0,9·ρ·g·6,84 Mio m³·280 m)
+let bet="auto",lvl=.25,hour=0,pmsg="";
+function pswMode(){if(bet!=="auto")return bet;const p=PLAN.find(p=>hour>=p[0]&&hour<p[1]);return p[2]}
+function stepPsw(dt){
+  if(bet==="auto"){hour=(hour+dt*1)%24}               // 1 s Animation = 1 h
+  const m=pswMode(),r=m==="P"?.085:m==="T"?-.106:0;    // Füllstand pro Stunde (Pumpen 10 h, Turbine 8 h gleichen sich aus)
+  lvl=Math.max(0,Math.min(1,lvl+r*dt*(bet==="auto"?1:.6)));
+  pmsg=bet!=="auto"&&((m==="P"&&lvl>=1)||(m==="T"&&lvl<=0))?(m==="P"?"Oberbecken voll: Pumpe stoppt.":"Oberbecken leer: Turbine stoppt."):"";
+}
+function scenePsw(t){
+  const m=pswMode(),stop=!!pmsg,act=stop?0:m,W=760,bot=400;
+  let s=defs+`<rect x="0" y="0" width="${W}" height="430" fill="#bfe0f5" opacity=".15"/>`;
+  // Berg
+  s+=`<path d="M0 150 L40 120 L300 120 L360 150 L540 330 L760 345 L760 430 L0 430 Z" fill="#8a7a64" opacity=".45"/>`;
+  // Oberbecken
+  const ob=[60,40,280,120],obY=ob[3]-(ob[3]-ob[1])*lvl;
+  s+=`<rect x="${ob[0]}" y="${obY}" width="${ob[2]-ob[0]}" height="${ob[3]-obY}" fill="${WATER}" opacity=".6"/>`;
+  s+=`<path d="M${ob[0]-6} ${ob[1]} V${ob[3]+6} H${ob[2]+6} V${ob[1]}" fill="none" stroke="#9aa3a0" stroke-width="10"/>`;
+  // Unterbecken (Our-Stausee)
+  const ub=[470,300,750,395],ubY=ub[1]+(ub[3]-ub[1])*(.15+.45*lvl);
+  s+=`<rect x="${ub[0]}" y="${ubY}" width="${ub[2]-ub[0]}" height="${ub[3]-ubY}" fill="${WATER}" opacity=".6"/>`;
+  s+=`<path d="M${ub[0]} ${ub[3]} H${ub[2]}" stroke="#9aa3a0" stroke-width="8"/><rect x="${ub[2]-8}" y="${ub[1]-10}" width="14" height="${ub[3]-ub[1]+14}" fill="#9aa3a0"/>`;
+  // Druckleitung und Kaverne
+  const pipe=[[250,118],[250,140],[420,330],[420,356]],out=[[420,356],[470,370],[560,370]],mx=420,my=345;
+  s+=`<polyline points="${pipe.map(p=>p.join(",")).join(" ")}" fill="none" stroke="#6b7471" stroke-width="16" stroke-linejoin="round"/>`;
+  s+=`<polyline points="${out.map(p=>p.join(",")).join(" ")}" fill="none" stroke="#6b7471" stroke-width="16" stroke-linejoin="round"/>`;
+  s+=`<rect x="${mx-46}" y="${my-70}" width="92" height="96" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-opacity=".4"/>`;
+  s+=`<rect x="${mx-18}" y="${my-62}" width="36" height="30" rx="4" fill="${act==="T"?"var(--accent)":act==="P"?"var(--cold)":"#7c8784"}"/><text class="lbl" x="${mx}" y="${my-42}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${act==="P"?"M":"G"}</text>`;
+  s+=`<line x1="${mx}" y1="${my-32}" x2="${mx}" y2="${my+4}" stroke="var(--ink)" stroke-width="3"/>`;
+  const dir=act==="T"?1:act==="P"?-1:0;
+  s+=rotor(mx,my+6,t*6*dir,22);
+  // Wasser in der Leitung
+  if(act){const path=[...pipe,...out.slice(1)],n=24,ph=t*.16*dir;s+=along(path,n,ph,4,WATER)}
+  // Strom zum Netz (Mast oben rechts)
+  s+=`<path d="M690 120 L705 40 L720 120 M697 80 H713 M693 60 H717" stroke="var(--ink)" stroke-width="2" fill="none"/>`;
+  const line=[[mx+46,my-50],[600,200],[705,50]];
+  s+=`<polyline points="${line.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--muted)" stroke-width="2"/>`;
+  if(act)s+=along(act==="T"?line:[...line].reverse(),10,t*.3,3.5,"#f5b42a",1);
+  s+=L_(W-10,140,act==="T"?`${PT} MW ins Netz`:act==="P"?`${PP} MW aus dem Netz`:"kein Stromfluss","end",13);
+  // Höhe
+  s+=`<line x1="30" y1="${ob[3]}" x2="30" y2="${ub[3]-40}" stroke="var(--ink)" marker-end="url(#ah)"/><line x1="30" y1="${ub[3]-40}" x2="30" y2="${ob[3]}" stroke="var(--ink)" marker-end="url(#ah)"/>`;
+  s+=`<line x1="22" y1="${ub[3]-40}" x2="${ub[0]}" y2="${ub[3]-40}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+  s+=L_(38,250,"h ≈ 280 m","start",13);
+  // Beschriftung
+  s+=L_((ob[0]+ob[2])/2,ob[1]-8,`Oberbecken · ${fmt(lvl*100,0)} % voll`);
+  s+=L_((ub[0]+ub[2])/2,ub[1]-12,"Unterbecken (Our-Stausee)");
+  s+=L_(mx-54,my+2,act==="P"?"Pumpe ←":"Pumpturbine","end",12);s+=L_(210,240,"Druckschacht","end",12,"var(--muted)");
+  const clock=bet==="auto"?`${String(Math.floor(hour)).padStart(2,"0")}:${String(Math.floor(hour%1*60)).padStart(2,"0")} Uhr · `:"";
+  s+=`<text x="${W-10}" y="${418}" text-anchor="end" font-size="13" fill="var(--muted)">${clock}${act==="T"?"Turbinenbetrieb":act==="P"?"Pumpbetrieb":"Stillstand"}</text>`;
+  if(stop)s+=`<rect x="250" y="170" width="250" height="32" rx="6" fill="var(--warn)"/>`+L_(375,191,pmsg,"middle",13,"#fff");
+  $("scene").innerHTML=s;
+  // Zeitleiste
+  $("tl").querySelector("i").style.left=`calc(${hour/24*100}% - 1px)`;
+}
+let lastPswKey="";
+function infoPsw(){
+  const m=pswMode(),act=pmsg?0:m,key=bet+"|"+act+"|"+(bet==="auto"?PLAN.findIndex(p=>hour>=p[0]&&hour<p[1]):"")+"|"+Math.round(lvl*100);
+  if(key===lastPswKey)return;lastPswKey=key;
+  $("tiles").innerHTML=tile("Betrieb",act==="T"?"Turbine":act==="P"?"Pumpe":"Stillstand","")+tile("Leistung",act==="T"?"+"+PT:act==="P"?"−"+PP:"0","\\(\\mathrm{MW}\\)",act==="P")+tile("Füllstand Oberbecken",fmt(lvl*100,0),"%")+tile("gespeichert (Vianden)",fmt(lvl*EMAX,1),"\\(\\mathrm{GWh}\\)");
+  const p=PLAN.find(p=>hour>=p[0]&&hour<p[1]);
+  $("explain").textContent=bet==="auto"?p[3]+(act==="T"?" Wasser fließt vom Oberbecken durch die Turbine ins Unterbecken.":act==="P"?" Die Maschine dreht rückwärts und drückt Wasser ins Oberbecken.":"")
+    :act==="T"?"Turbinenbetrieb: Wasser fließt durch den Druckschacht hinunter, treibt die Pumpturbine an, der Generator speist Strom ins Netz."
+    :act==="P"?"Pumpbetrieb: Der Generator läuft als Motor und nimmt Strom aus dem Netz. Die Maschine dreht andersherum und pumpt Wasser hinauf ins Oberbecken."
+    :pmsg;
+  $("sinfo").innerHTML=`Der Tagesablauf ist ein vereinfachtes Beispiel. Der tatsächliche Betrieb richtet sich nach Strombedarf, Strompreis und Regelenergie. Leistungen: SEO, \\(1294\\,\\mathrm{MW}\\) Turbine und \\(1046\\,\\mathrm{MW}\\) Pumpe. Voll entspricht etwa \\(${n_(EMAX,1)}\\,\\mathrm{GWh}\\) (Rechner unten).`;
+  typeset([$("tiles"),$("sinfo")]);
+}
+const COL={P:"var(--cold)",T:"var(--accent)",0:"#9aa3a0"};
+$("tl").innerHTML=PLAN.map(p=>`<span style="width:${(p[1]-p[0])/24*100}%;background:${COL[p[2]]}">${p[2]==="P"?"Pumpen":p[2]==="T"?"Turbine":""}</span>`).join("")+"<i></i>";
+
+/* ---------- Steuerung ---------- */
+function loop(ts){const dt=lastTs?Math.min(.1,(ts-lastTs)/1000):0;lastTs=ts;if(run)tAnim+=dt;
+  if(kw==="lauf")sceneLauf(tAnim);else{if(run)stepPsw(dt);scenePsw(tAnim);infoPsw()}
+  requestAnimationFrame(loop)}
+function setKw(k){kw=k;document.querySelectorAll("[data-k]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===k));
+  $("pswbar").hidden=$("tlbox").hidden=k!=="psw";$("laufctrl").hidden=k!=="lauf";
+  $("scene").setAttribute("aria-label",k==="lauf"?"Schnitt durch ein Laufwasserkraftwerk mit Wehr, Rechen, Kaplan-Turbine und Generator":"Pumpspeicherkraftwerk mit Ober- und Unterbecken, Druckschacht und Pumpturbine");
+  lastPswKey="";if(k==="lauf")infoLauf();}
+document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>setKw(b.dataset.k));
+document.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{bet=b.dataset.b;document.querySelectorAll("[data-b]").forEach(x=>x.setAttribute("aria-pressed",x===b));lastPswKey=""});
+["q","h0"].forEach(id=>$(id).oninput=infoLauf);
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Abspielen"};if(!run)$("play").textContent="Abspielen";
+setKw("lauf");requestAnimationFrame(loop);
+
+/* ---------- Rechner Pumpspeicher ---------- */
+function rechner(){
+  const V=val("v")*1e6,h=val("hp"),P=val("pt")*1e6,eT=val("et"),eP=val("ep");
+  const Epot=RHO*G*V*h,Eab=eT*Epot,Eauf=Epot/eP,eg=eT*eP,t=Eab/P;
+  $("o-v").textContent=`${fmt(V/1e6,2)} Mio. m³`;$("o-hp").textContent=`${fmt(h,0)} m`;$("o-pt").textContent=`${fmt(P/1e6,0)} MW`;$("o-et").textContent=fmt(eT,2);$("o-ep").textContent=fmt(eP,2);
+  $("r-eab").textContent=fmt(Eab/3.6e12,2);$("r-eauf").textContent=fmt(Eauf/3.6e12,2);$("r-eges").textContent=fmt(eg*100,1);$("r-t").textContent=fmt(t/3600,1);
+  $("calc").innerHTML=M(`E_{pot} = \\rho\\cdot g\\cdot V\\cdot h = 1000\\cdot 9{,}81\\cdot ${n_(V,0)}\\cdot ${n_(h,0)} = ${n_(Epot/1e12,2)}\\cdot 10^{12}\\,\\mathrm{J} = ${n_(Epot/3.6e12,2)}\\,\\mathrm{GWh}`,"Lageenergie des Wassers im Oberbecken")
+    +M(`E_{ab} = \\eta_T\\cdot E_{pot} = ${n_(eT,2)}\\cdot ${n_(Epot/3.6e12,2)} = ${n_(Eab/3.6e12,2)}\\,\\mathrm{GWh}`,"Strom ins Netz")
+    +M(`E_{auf} = \\frac{E_{pot}}{\\eta_P} = \\frac{${n_(Epot/3.6e12,2)}}{${n_(eP,2)}} = ${n_(Eauf/3.6e12,2)}\\,\\mathrm{GWh}`,"Strom zum Hochpumpen")
+    +M(`t = \\frac{E_{ab}}{P_T} = \\frac{${n_(Eab/1e6/3600,0)}\\,\\mathrm{MWh}}{${n_(P/1e6,0)}\\,\\mathrm{MW}} = ${n_(t/3600,1)}\\,\\mathrm{h}`,"so lange läuft das Kraftwerk mit voller Leistung");
+  typeset($("calc"));
+}
+["v","hp","pt","et","ep"].forEach(id=>$(id).oninput=rechner);
+$("vianden").onclick=()=>{[["v",6.84],["hp",280],["pt",1294],["et",.9],["ep",.88]].forEach(([k,v])=>$(k).value=v);rechner()};
+rechner();
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const Q=pk([80,100,120,150]),h=pk([3,4,5,6]),e=pk([0.85,0.88,0.9]),V=pk([2,4,5,6]),hp=pk([200,250,300]),eT=pk([0.88,0.9]),eP=pk([0.85,0.88]);
+  const T=[
+    {kind:"num",q:`Durch die Turbinen eines Laufwasserkraftwerks fließen \\(Q = ${Q}\\,\\mathrm{m^3/s}\\) bei einer Fallhöhe von \\(h = ${h}\\,\\mathrm{m}\\). Der Wirkungsgrad ist \\(\\eta = ${n_(e,2)}\\). Berechne die elektrische Leistung in MW.`,ans:e*RHO*G*Q*h/1e6,unit:"\\(\\mathrm{MW}\\)",tol:.02,sol:`\\(P = \\eta\\cdot\\rho\\cdot g\\cdot Q\\cdot h = ${n_(e,2)}\\cdot 1000\\cdot 9{,}81\\cdot ${Q}\\cdot ${h} = ${n_(e*RHO*G*Q*h,0)}\\,\\mathrm{W} = ${n_(e*RHO*G*Q*h/1e6,2)}\\,\\mathrm{MW}\\)`},
+    {kind:"num",q:`Ein Oberbecken fasst \\(V = ${V}\\cdot 10^6\\,\\mathrm{m^3}\\) nutzbares Wasser, die Fallhöhe ist \\(h = ${hp}\\,\\mathrm{m}\\), \\(\\eta_T = ${n_(eT,2)}\\). Wie viel Strom liefert es beim Entleeren (in GWh)?`,ans:eT*RHO*G*V*1e6*hp/3.6e12,unit:"\\(\\mathrm{GWh}\\)",tol:.02,sol:`\\(E = \\eta_T\\cdot\\rho\\cdot g\\cdot V\\cdot h = ${n_(eT,2)}\\cdot 1000\\cdot 9{,}81\\cdot ${V}\\cdot 10^6\\cdot ${hp} = ${n_(eT*RHO*G*V*1e6*hp/1e12,2)}\\cdot 10^{12}\\,\\mathrm{J}\\); geteilt durch \\(3{,}6\\cdot 10^{12}\\,\\mathrm{J/GWh}\\) ergibt \\(${n_(eT*RHO*G*V*1e6*hp/3.6e12,2)}\\,\\mathrm{GWh}\\)`},
+    {kind:"num",q:`Die Pumpe hat \\(\\eta_P = ${n_(eP,2)}\\), die Turbine \\(\\eta_T = ${n_(eT,2)}\\). Wie groß ist der Gesamtwirkungsgrad des Pumpspeichers in %?`,ans:eP*eT*100,unit:"%",tol:.01,sol:`\\(\\eta_{ges} = \\eta_P\\cdot\\eta_T = ${n_(eP,2)}\\cdot ${n_(eT,2)} = ${n_(eP*eT,3)}\\), also \\(${n_(eP*eT*100,1)}\\,\\%\\)`},
+    {kind:"num",q:"Die beiden Moselkraftwerke der SEO (Grevenmacher 7,8 MW und Palzem 4,5 MW) haben 2023 zusammen 50,63 GWh erzeugt. Wie viele Volllaststunden sind das?",ans:50.63e3/12.3,unit:"\\(\\mathrm{h}\\)",tol:.01,sol:`\\(t = \\frac{E}{P} = \\frac{50\\,630\\,\\mathrm{MWh}}{12{,}3\\,\\mathrm{MW}} \\approx 4116\\,\\mathrm{h}\\), also etwa die Hälfte der \\(8760\\,\\mathrm{h}\\) eines Jahres.`},
+    {kind:"sel",q:"Welche Turbine passt zu kleiner Fallhöhe und großem Volumenstrom, wie an der Mosel?",opts:["Kaplan-Turbine","Pelton-Turbine","Dampfturbine"],ans:0,sol:"Kaplan-Turbinen mit verstellbaren Schaufeln sind für Niederdruck-Laufwasserkraftwerke gebaut. Pelton-Turbinen brauchen sehr große Fallhöhen."},
+    {kind:"sel",q:"Warum ist ein Pumpspeicherkraftwerk ein Speicher und keine Energiequelle?",opts:["Es braucht mehr Strom zum Hochpumpen, als es später zurückgibt","Es läuft nur nachts","Es nutzt Regenwasser"],ans:0,sol:"Mit \\(\\eta_{ges} \\approx 0{,}75\\) bis \\(0{,}8\\) geht etwa ein Fünftel bis ein Viertel verloren. Der Nutzen liegt im zeitlichen Verschieben: Überschussstrom speichern, bei Bedarf liefern."},
+    {kind:"sel",q:"Warum sinkt die Leistung eines Laufwasserkraftwerks bei starkem Hochwasser, obwohl viel Wasser kommt?",opts:["Das Unterwasser steigt, die Fallhöhe wird kleiner, und mehr als der Ausbaudurchfluss passt nicht durch die Turbinen","Die Turbine dreht zu schnell und wird gebremst","Das Wasser ist zu kalt"],ans:0,sol:"Probiere es oben in der Animation mit dem Regler für den Abfluss aus."},
+    {kind:"sel",q:"Wann pumpt ein Pumpspeicherkraftwerk heute oft Wasser hoch?",opts:["Wenn Strom übrig ist, zum Beispiel nachts oder mittags bei viel Solarstrom","Immer zur Abendspitze","Nur im Winter"],ans:0,sol:"Bei Überschuss ist Strom billig und das Netz muss ihn aufnehmen. Zur Bedarfsspitze wird das Wasser wieder turbiniert."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+quiz();
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([["grevenmacher-staustufe","Moselstaustufe Grevenmacher–Wellen: Links das Krafthaus, in der Mitte läuft Wasser über das Wehr, vorne die Schleusenkammer."],["kaplan-turbine","Laufrad einer Kaplan-Turbine (Technisches Museum Wien). Die Schaufeln lassen sich verstellen."],["vianden-oberbecken","Oberbecken 1 des Pumpspeicherkraftwerks Vianden auf dem Berg über dem Ourtal, links der Einlauf zu den Maschinen."],["pumpturbine","Laufrad einer ausgemusterten Pumpturbine des Pumpspeicherkraftwerks Coo-Trois-Ponts in Belgien. Sie arbeitet als Pumpe und als Turbine."]]);
+</script>
+</body>
+</html>
