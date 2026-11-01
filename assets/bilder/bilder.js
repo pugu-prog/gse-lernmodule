@@ -76,11 +76,53 @@ const BILDER={
 "lizenz": "eigene Zeichnung",
 "lizenzUrl": "",
 "quelle": ""
+},
+"wp-aussen": {
+"datei": "wp-aussen.jpg",
+"autor": "Mueller felix",
+"lizenz": "CC BY-SA 4.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:W%C3%A4rmepumpe_Au%C3%9Feneinheit.jpg"
+},
+"wp-innen": {
+"datei": "wp-innen.jpg",
+"autor": "PeterEastern",
+"lizenz": "CC BY-SA 4.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:Ecodan_outdoor_unit_Internal_view.jpg"
+},
+"wp-schnee": {
+"datei": "wp-schnee.jpg",
+"autor": "PeterEastern",
+"lizenz": "CC BY-SA 4.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:Ecodan_outdoor_unit_in_the_snow.jpg"
+},
+"sole-wp": {
+"datei": "sole-wp.jpg",
+"autor": "Volkerschmidt",
+"lizenz": "CC BY 3.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by/3.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:Thermia_Sole-Wasser-W%C3%A4rmepumpe.jpg"
+},
+"erdkollektor": {
+"datei": "erdkollektor.jpg",
+"autor": "PBaeumchen",
+"lizenz": "CC BY-SA 3.0",
+"lizenzUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+"quelle": "https://commons.wikimedia.org/wiki/File:FlaechenkollektorWaermepumpe.jpg"
+},
+"erdsonde": {
+"datei": "erdsonde.jpg",
+"autor": "Tetris L",
+"lizenz": "gemeinfrei (Public Domain)",
+"lizenzUrl": "",
+"quelle": "https://commons.wikimedia.org/wiki/File:Erdwaermesondenbohrung01.JPG"
 }
 };
 ["trombe-sommer","trombe-winter","lueftungsgeraet","solargraph"].forEach(k=>BILDER[k].fit=1);   // ganz zeigen statt zuschneiden
 function bilderHTML(items){ // items: [[schlüssel, Bildunterschrift], ...]
   return `<div class="fotos">${items.map(([k,cap])=>{const b=BILDER[k];
-    const credit=b.quelle?`Foto: ${esc(b.autor)}, <a href="${b.lizenzUrl}" target="_blank" rel="noopener">${esc(b.lizenz)}</a>, <a href="${b.quelle}" target="_blank" rel="noopener">Wikimedia Commons</a>`:esc(b.lizenz==="eigene Zeichnung"?"Zeichnung: GSE-Lernmodule":b.autor);
+    const credit=b.quelle?`Foto: ${esc(b.autor)}, ${b.lizenzUrl?`<a href="${b.lizenzUrl}" target="_blank" rel="noopener">${esc(b.lizenz)}</a>`:esc(b.lizenz)}, <a href="${b.quelle}" target="_blank" rel="noopener">Wikimedia Commons</a>`:esc(b.lizenz==="eigene Zeichnung"?"Zeichnung: GSE-Lernmodule":b.autor);
     return`<figure><a href="../assets/bilder/${b.datei}" target="_blank" rel="noopener"><img src="../assets/bilder/${b.datei}" alt="${esc(cap.split(":")[0])}" loading="lazy" ${b.fit?'style="object-fit:contain;background:#fff"':""}></a><figcaption>${cap}<span class="credit">${credit}</span></figcaption></figure>`}).join("")}</div>`;
 }

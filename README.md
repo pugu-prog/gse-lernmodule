@@ -11,6 +11,7 @@ Interaktive Lernmodule für **Sciences Environnementales** am Lycée Technique d
 | `waermetauscher/` | Kreuzwärmetauscher mit Kondensat |
 | `schichtspeicher/` | Schichtspeicher: Zapfen, Laden, Schichtenlanze, Verwirbelung |
 | `solarspeicher/` | Solaranlage mit bivalentem Speicher einen Tag in Ettelbruck, Auslegung |
+| `waermepumpe/` | Wärmepumpe: Kreisprozess, ε, COP, Carnot, Heizjahr Ettelbruck mit Betriebsweise und JAZ |
 | `lehrer/` | Aufgabenblätter mit Lösungen (verschlüsselt, Passwort) |
 
 Gemeinsam genutzt: `assets/base.css` (Design), `assets/core.js` (Zahlen, MathJax, Aufgaben prüfen), `assets/speicher.js` (Speichermodell in Wasserschichten), `assets/bauphysik.js` (Materialien aus der ENTEC-Formelsammlung 26/27 und Bauphysik-Rechnungen).

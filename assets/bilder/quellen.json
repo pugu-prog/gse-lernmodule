@@ -78,5 +78,53 @@
   "lizenz": "CC BY-SA 4.0",
   "lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
   "quelle": "https://commons.wikimedia.org/wiki/File:Thermographie_zur_Darstellung_von_W%C3%A4rmeverlusten_an_Geb%C3%A4uden.jpg"
+ },
+ "wp-aussen": {
+  "datei": "wp-aussen.jpg",
+  "titel": "Wärmepumpe Außeneinheit.jpg",
+  "autor": "Mueller felix",
+  "lizenz": "CC BY-SA 4.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:W%C3%A4rmepumpe_Au%C3%9Feneinheit.jpg"
+ },
+ "wp-innen": {
+  "datei": "wp-innen.jpg",
+  "titel": "Ecodan outdoor unit Internal view.jpg",
+  "autor": "PeterEastern",
+  "lizenz": "CC BY-SA 4.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Ecodan_outdoor_unit_Internal_view.jpg"
+ },
+ "wp-schnee": {
+  "datei": "wp-schnee.jpg",
+  "titel": "Ecodan outdoor unit in the snow.jpg",
+  "autor": "PeterEastern",
+  "lizenz": "CC BY-SA 4.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Ecodan_outdoor_unit_in_the_snow.jpg"
+ },
+ "sole-wp": {
+  "datei": "sole-wp.jpg",
+  "titel": "Thermia Sole-Wasser-Wärmepumpe.jpg",
+  "autor": "Volkerschmidt",
+  "lizenz": "CC BY 3.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by/3.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Thermia_Sole-Wasser-W%C3%A4rmepumpe.jpg"
+ },
+ "erdkollektor": {
+  "datei": "erdkollektor.jpg",
+  "titel": "FlaechenkollektorWaermepumpe.jpg",
+  "autor": "PBaeumchen",
+  "lizenz": "CC BY-SA 3.0",
+  "lizenzUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "quelle": "https://commons.wikimedia.org/wiki/File:FlaechenkollektorWaermepumpe.jpg"
+ },
+ "erdsonde": {
+  "datei": "erdsonde.jpg",
+  "titel": "Erdwaermesondenbohrung01.JPG",
+  "autor": "Tetris L",
+  "lizenz": "gemeinfrei (Public Domain)",
+  "lizenzUrl": "",
+  "quelle": "https://commons.wikimedia.org/wiki/File:Erdwaermesondenbohrung01.JPG"
  }
 }

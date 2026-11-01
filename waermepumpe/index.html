@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wärmepumpe · GSE-Lernmodule</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>#kp text,#eps text,#jdl text,#hl text{font-family:var(--f-mono)} #kp .lbl{font-family:var(--f-display);font-weight:600}
+.flow{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line);font-size:12px;font-weight:600;color:#fff}
+.flow span{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;min-width:0;transition:flex-basis .25s}
+.wq td,.wq th{font-size:13px}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="back" href="../">← Alle Module</a>
+      <h1>Wärmepumpe</h1>
+      <p class="sub">Eine Wärmepumpe holt Wärme aus Luft, Erdreich oder Grundwasser und hebt sie mit Strom auf die Temperatur der Heizung. Aus einer Kilowattstunde Strom werden so drei bis fünf Kilowattstunden Wärme. Wie viel genau, hängt vor allem davon ab, wie weit die Temperatur gehoben werden muss.</p>
+    </div>
+  </header>
+
+  <section class="simbox">
+    <h2>Simulation: der Kreisprozess</h2>
+    <div class="grid">
+      <div><svg id="kp" viewBox="0 0 560 420" width="100%" role="img" aria-label="Kältemittelkreislauf mit Verdampfer, Verdichter, Verflüssiger und Expansionsventil"></svg>
+        <div class="playbar"><button id="play">Pause</button><span class="c">Blau = kalt, Rot = heiß · kleine Punkte = flüssig, große Kreise = gasförmig</span></div></div>
+      <div class="ctrls" style="align-content:start">
+        <label>Wärmequelle<select id="src"><option value="L">Luft (Luft-Wasser-WP)</option><option value="S">Erdreich (Sole-Wasser-WP)</option><option value="W">Grundwasser (Wasser-Wasser-WP)</option></select></label>
+        <label>Temperatur der Quelle \(\vartheta_{kalt}\) <output id="o-tk"></output><input type="range" id="tk" min="-15" max="20" step="1" value="2"></label>
+        <label>Vorlauftemperatur \(\vartheta_{warm}\) <output id="o-tw"></output><input type="range" id="tw" min="30" max="65" step="1" value="35"></label>
+        <label>Heizleistung \(\dot Q_{WP}\) <output id="o-q"></output><input type="range" id="q" min="3" max="15" step="0.5" value="8"></label>
+        <label>Gütegrad \(\eta\) <output id="o-eta"></output><input type="range" id="eta" min="0.3" max="0.6" step="0.01" value="0.41"></label>
+        <label>Hilfsantriebe \(P_{Hilf}\) <output id="o-ph"></output><input type="range" id="ph" min="0" max="0.5" step="0.01" value="0.1"></label>
+        <p class="c" id="srcinfo" style="margin:0"></p>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Carnot-Leistungszahl \(\varepsilon_C\)</span><span class="val dp" id="r-ec">–</span><span class="pill neu">theoretisches Maximum</span></div>
+      <div class="result"><span class="lab">Leistungsziffer \(\varepsilon\)</span><span class="val" id="r-e">–</span><span class="pill" id="r-cop"></span></div>
+      <div class="result"><span class="lab">Strom Verdichter \(P_{el,V}\)</span><span class="val" id="r-p">–</span><span class="unit">\(\mathrm{kW}\)</span><span class="pill neu" id="r-u"></span></div>
+    </div>
+    <div>
+      <div class="flow" aria-label="Energiefluss"><span id="f-u" style="background:var(--cold)"></span><span id="f-v" style="background:var(--warn)"></span><span id="f-h" style="background:#7c6f64"></span></div>
+      <div class="legend"><span><i class="lg z" style="opacity:1;background:var(--cold)"></i>Umweltwärme \(\dot Q_{U}\)</span><span><i class="lg z" style="opacity:1;background:var(--warn)"></i>Strom Verdichter \(P_{el,V}\)</span><span><i class="lg z" style="opacity:1;background:#7c6f64"></i>Strom Hilfsantriebe \(P_{Hilf}\)</span><span>abgegeben wird \(\dot Q_{WP} = \dot Q_U + P_{el,V}\)</span></div>
+    </div>
+    <div class="grid even">
+      <div class="steps" id="calc"></div>
+      <div><svg id="eps" viewBox="0 0 520 330" width="100%" role="img" aria-label="Leistungsziffer in Abhängigkeit der Quellentemperatur mit Datenblattwerten"></svg>
+        <div class="legend"><span><i class="lg" style="border-top:2.5px solid var(--accent)"></i>Modell bei \(\vartheta_{warm}\) = <span id="lg-tw"></span></span><span><i class="lg d"></i>Modell W35 / W55</span><span>● Datenblatt WP 1 (Luft) &nbsp;■ WP 2 (Sole, B0/W35) aus dem Skript</span></div></div>
+    </div>
+  </section>
+
+  <section class="simbox">
+    <h2>Ein Heizjahr in Ettelbruck: Betriebsweise und Jahresarbeitszahl</h2>
+    <p class="c" style="margin:0;max-width:80ch">Die Tagesmitteltemperaturen eines Jahres, der Größe nach sortiert, ergeben die <b>Jahresdauerlinie</b>. Daten für Ettelbruck 2015 bis 2024 (ERA5-Wetterdaten). Das Mittel glättet die kalten Tage; einzelne Jahre zeigen, was an Frosttagen passiert. Für jeden Tag rechnet das Modell den Wärmebedarf, die Leistung der Wärmepumpe und ihre Leistungsziffer.</p>
+    <div class="ctrls">
+      <label>Wetterjahr<select id="yr"><option value="m">Mittel 2015–2024</option></select></label>
+      <label>Wärmepumpe<select id="ysrc"><option value="L">Luft-Wasser</option><option value="S">Sole-Wasser (Sole 0 °C)</option></select></label>
+      <label>Betriebsweise<select id="mode"><option value="mono">monovalent</option><option value="alt">bivalent-alternativ</option><option value="par">bivalent-parallel</option><option value="me" selected>monoenergetisch</option></select></label>
+      <label>Heizlast bei Normaußentemp. \(\dot Q_{HL}\) <output id="o-hl"></output><input type="range" id="hl" min="4" max="16" step="0.5" value="8"></label>
+      <label>Normaußentemperatur \(\vartheta_{e}\) <output id="o-tn"></output><input type="range" id="tn" min="-16" max="-6" step="1" value="-10"></label>
+      <label>Bivalenzpunkt \(\vartheta_{biv}\) <output id="o-tb"></output><input type="range" id="tb" min="-10" max="6" step="1" value="-4"></label>
+      <label>Heizsystem<select id="sys"><option value="35">Fußbodenheizung (35 °C)</option><option value="45">Niedertemperatur-Heizkörper (45 °C)</option><option value="55">alte Heizkörper (55 °C)</option></select></label>
+    </div>
+    <div class="grid even">
+      <div><svg id="jdl" viewBox="0 0 520 300" width="100%" role="img" aria-label="Jahresdauerlinie der Außentemperatur Ettelbruck"></svg></div>
+      <div><svg id="hl-svg" viewBox="0 0 520 300" width="100%" role="img" aria-label="Heizleistung über die Tage des Jahres, Anteil Wärmepumpe und Zusatzheizung"></svg>
+        <div class="legend"><span><i class="lg z" style="opacity:.75;background:var(--accent)"></i>Wärmepumpe</span><span><i class="lg z" style="opacity:.75;background:var(--warm)"></i><span id="lg-zus">Zusatzheizung</span></span><span><i class="lg d"></i>Leistungsgrenze der Wärmepumpe</span></div></div>
+    </div>
+    <div class="tiles">
+      <div class="result"><span class="lab">Anteil Wärmepumpe an der Heizwärme</span><span class="val" id="y-ant">–</span><span class="unit">%</span><span class="pill neu" id="y-q"></span></div>
+      <div class="result"><span class="lab">Jahresarbeitszahl \(\beta\) (Modell)</span><span class="val" id="y-jaz">–</span><span class="pill" id="y-jazp"></span></div>
+      <div class="result"><span class="lab">Strom im Jahr</span><span class="val dp" id="y-el">–</span><span class="unit">\(\mathrm{kWh}\)</span><span class="pill neu" id="y-elp"></span></div>
+    </div>
+    <div class="steps" id="ycalc"></div>
+  </section>
+
+  <section>
+    <h2>So sieht es in echt aus</h2>
+    <div id="echt"></div>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="expl">
+      <div><h3>1 · Verdampfen</h3><p>Im Kreislauf fließt ein <b>Kältemittel</b>, das schon bei sehr tiefen Temperaturen siedet. Sein Siedepunkt liegt unter der Temperatur der Wärmequelle. Im <b>Verdampfer</b> nimmt es (näherungsweise isotherm) Wärme aus Luft, Erdreich oder Wasser auf und wird gasförmig.</p></div>
+      <div><h3>2 · Verdichten</h3><p>Der elektrisch angetriebene <b>Verdichter</b> (Kompressor) saugt das Gas an und presst es zusammen. Druck und Temperatur steigen stark an. Hier wird die elektrische Energie \(P_{el,V}\) zugeführt.</p></div>
+      <div><h3>3 · Verflüssigen</h3><p>Im <b>Verflüssiger</b> (Kondensator) gibt das heiße Gas unter hohem Druck seine Wärme an das Heizungswasser ab und wird wieder flüssig. Abgegeben wird die Umweltwärme plus die Antriebsenergie: \(\dot Q_{WP} = \dot Q_U + P_{el,V}\).</p></div>
+      <div><h3>4 · Entspannen</h3><p>Im <b>Expansionsventil</b> (Drosselventil) fällt der Druck, das Kältemittel kühlt stark ab. Es ist jetzt wieder kalt genug, um im Verdampfer Wärme aus der Umwelt aufzunehmen. Der Kreislauf beginnt von vorn.</p></div>
+      <div><h3>Leistungsziffer \(\varepsilon = \dfrac{\dot Q_{WP}}{P_{el,V}}\)</h3><p>Formelsammlung Kapitel 3: Verhältnis von abgegebener Wärmeleistung zur Leistung des Verdichters, gemessen in einem Betriebspunkt unter Normbedingungen, z. B. A2/W35 (Luft 2 °C, Vorlauf 35 °C). Hilfsantriebe sind nicht enthalten.</p></div>
+      <div><h3>COP \(= \dfrac{\dot Q_{WP}}{P_{el,V+Hilf}}\)</h3><p>Coefficient of Performance: wie \(\varepsilon\), aber mit Ventilator, Solepumpe oder Brunnenpumpe. Der COP ist deshalb immer kleiner als \(\varepsilon\) und für den Betreiber aussagekräftiger. In Datenblättern werden beide oft gleichgesetzt.</p></div>
+      <div><h3>Jahresarbeitszahl \(\mathrm{JAZ} = \beta = \dfrac{Q_{WP}}{W_{el,V+Hilf}}\)</h3><p>Energien (kWh) über ein ganzes Jahr unter Realbedingungen. Sie erfasst Wärmequelle, Heizsystem, Dämmung und Nutzerverhalten. Feldtest Fraunhofer: Luft-Wasser 2,6 bis 3,0, Sole-Wasser 3,3 bis 3,8, Wasser-Wasser um 3,5. Primärenergetisch sinnvoll ab etwa \(\beta \geq 3\).</p></div>
+      <div><h3>Carnot-Leistungszahl \(\varepsilon_C = \dfrac{T_{warm}}{T_{warm} - T_{kalt}}\)</h3><p>Das theoretische Maximum, mit absoluten Temperaturen in Kelvin: \(T = \vartheta + 273{,}15\). Entscheidend ist der <b>Temperaturhub</b> \(T_{warm} - T_{kalt}\) im Nenner. Deshalb: niedrige Vorlauftemperatur (Fußbodenheizung) und warme Quelle.</p></div>
+      <div><h3>Gütegrad \(\eta = \dfrac{\varepsilon}{\varepsilon_C}\)</h3><p>Wie nah kommt die echte Maschine an Carnot heran? Aus den Datenblättern im Skript ergibt sich für WP 1 (Luft) \(\eta \approx 0{,}41\), für WP 2 (Sole) \(\eta \approx 0{,}53\). Die Simulation rechnet \(\varepsilon = \eta\cdot\varepsilon_C\).</p></div>
+      <div><h3>Betriebsweisen</h3><p><b>Monovalent:</b> nur die WP, ausgelegt auf den kältesten Tag (meist Sole, Wasser). <b>Bivalent:</b> zweiter Wärmeerzeuger (Gas, Öl, Holz) unter dem Bivalenzpunkt, <i>alternativ</i> (WP aus) oder <i>parallel</i> (beide). <b>Monoenergetisch:</b> Heizstab statt Kessel, deckt nur ca. 5 %.</p></div>
+    </div>
+    <div class="grid even" style="margin-top:18px">
+      <div class="tbl"><h3>Wärmequellen im Vergleich</h3><table class="wq"><tr><th>Typ</th><th>Quelle</th><th>Eigenschaften</th></tr>
+        <tr><td>Sole-Wasser</td><td>Erdkollektor (0,8 bis 1,2 m tief, Fläche ≈ Wohnfläche) oder Erdsonde (25 bis 200 m)</td><td>gleichmäßiges Wärmeangebot, teuer, Bohrung über 100 m genehmigungspflichtig</td></tr>
+        <tr><td>Wasser-Wasser</td><td>Grundwasser, Zapf- und Schluckbrunnen (4 bis 50 m)</td><td>energetisch beste Quelle, wasserrechtliche Genehmigung, Wasseranalyse</td></tr>
+        <tr><td>Luft-Wasser</td><td>Außenluft</td><td>günstig, keine Genehmigung, aber geringere JAZ, Abtauen, Geräusche</td></tr></table></div>
+      <div class="tbl"><h3>Erdsonde: spezifische Wärmeentzugsleistung</h3><table class="wq"><tr><th>Bodenqualität</th><th class="r">W pro m Sondenlänge</th></tr>
+        <tr><td>Kies, Sand, trocken</td><td class="r num">20 bis 25</td></tr><tr><td>Kies, Sand, wasserführend</td><td class="r num">55 bis 80</td></tr><tr><td>Ton, Lehm, feucht</td><td class="r num">30 bis 50</td></tr><tr><td>Kalkstein</td><td class="r num">45 bis 70</td></tr><tr><td>Sandstein</td><td class="r num">55 bis 80</td></tr><tr><td>Gneis, Granit</td><td class="r num">55 bis 85</td></tr></table>
+        <p class="c" style="margin:6px 0 0">Die Sonde liefert die Umweltwärme \(\dot Q_U = \dot Q_{WP} - P_{el,V}\), nicht die volle Heizleistung.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">Teste dich</h2><span class="badge" id="qscore"></span></div>
+    <div id="quiz"></div>
+    <div class="row"><button id="qnew">Neue Fragen</button></div>
+  </section>
+  <footer class="foot"><span>GSE-Lernmodule · Sciences Environnementales · LTEtt</span><span>Formeln: ENTEC-Formelsammlung 26/27, Kapitel 3 · Datenblätter, Feldtest, Betriebsweisen: Skript „Wärme erzeugen“, Kap. 2 · Temperaturen: ERA5 über Open-Meteo</span></footer>
+</div>
+<script src="../assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/core.js"></script>
+<script src="../assets/bilder/bilder.js"></script>
+<script>
+const K0=273.15;
+/* Voreinstellungen je Wärmequelle. Gütegrad aus den Datenblättern im Skript (WP 1 Luft, WP 2 Sole); Wasser und alle Hilfsantriebe: Annahmen */
+const SRC={
+  L:{n:"Luft",min:-15,max:20,v:2,eta:0.41,ph:0.10,hilf:"Ventilator",info:"Gütegrad 0,41 aus Datenblatt WP 1 (Skript). Die Quelle schwankt mit dem Wetter."},
+  S:{n:"Erdreich",min:-5,max:12,v:0,eta:0.53,ph:0.12,hilf:"Solepumpe",info:"Gütegrad 0,53 aus Datenblatt WP 2 bei B0/W35 (Skript). Die Sole hat im Winter etwa 0 °C."},
+  W:{n:"Grundwasser",min:7,max:13,v:10,eta:0.53,ph:0.25,hilf:"Brunnenpumpe",info:"Grundwasser hat fast das ganze Jahr etwa 10 °C. Gütegrad wie Sole angenommen; die Brunnenpumpe braucht mehr Strom."}};
+const epsC=(tw,tk)=>(tw+K0)/(tw-tk);
+function calc(){
+  const s=$("src").value,tk=val("tk"),tw=val("tw"),Q=val("q"),eta=val("eta"),ph=val("ph");
+  const ec=epsC(tw,tk),e=eta*ec,P=Q/e,U=Q-P,cop=Q/(P+ph);
+  return{s,tk,tw,Q,eta,ph,ec,e,P,U,cop};
+}
+$("src").onchange=()=>{const c=SRC[$("src").value],tk=$("tk");tk.min=c.min;tk.max=c.max;tk.value=c.v;$("eta").value=c.eta;$("ph").value=c.ph;update()};
+
+/* ---------- Kreislauf zeichnen ---------- */
+const C=(t)=>{const lo=-15,hi=70,x=Math.max(0,Math.min(1,(t-lo)/(hi-lo)));const a=[37,99,235],m=[226,232,236],b=[194,65,12];const c=x<.4?a.map((k,i)=>k+(m[i]-k)*x/.4):m.map((k,i)=>k+(b[i]-k)*(x-.4)/.6);return`rgb(${c.map(Math.round).join(",")})`};
+// Weg des Kältemittels (im Uhrzeigersinn): Ventil → Verdampfer (links, nach oben) → Verdichter (oben) → Verflüssiger (rechts, nach unten) → Ventil
+const X1=150,X2=410,Y1=90,Y2=340,XM=280;
+const SEG=[[XM,Y2,X1,Y2,"nach"],[X1,Y2,X1,Y1,"verd"],[X1,Y1,XM,Y1,"saug"],[XM,Y1,X2,Y1,"heiss"],[X2,Y1,X2,Y2,"kond"],[X2,Y2,XM,Y2,"flues"]];
+const LEN=SEG.map(s=>Math.hypot(s[2]-s[0],s[3]-s[1])),TOT=LEN.reduce((a,b)=>a+b);
+function at(d){d=((d%TOT)+TOT)%TOT;for(let i=0;i<SEG.length;i++){if(d<=LEN[i]){const s=SEG[i],f=d/LEN[i];return{x:s[0]+(s[2]-s[0])*f,y:s[1]+(s[3]-s[1])*f,k:s[4],f}}d-=LEN[i]}return{x:XM,y:Y2,k:"nach",f:0}}
+let run=!matchMedia("(prefers-reduced-motion: reduce)").matches,T=0,last=0;
+function draw(r,t){
+  const tv=r.tk-6,tc=r.tw+6,th=r.tw+30;   // nur für die Farben: Kältemittel etwas kälter als die Quelle, heißer als der Vorlauf
+  const tempAt=p=>({nach:tv,verd:tv,saug:tv+3,heiss:th,kond:th+(tc-th)*Math.min(1,p.f*3),flues:tc-(tc-tv)*0}[p.k]);
+  const gasAt=p=>p.k==="verd"?p.f:p.k==="saug"||p.k==="heiss"?1:p.k==="kond"?1-p.f:p.k==="nach"?0.12:0;
+  let g=`<defs><marker id="ar" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto"><path d="M0 0L16 8L0 16z" fill="var(--ink)"/></marker></defs>`;
+  // Leitungen: Niederdruck blau, Hochdruck rot
+  g+=`<path d="M${XM} ${Y2} H${X1} V${Y1} H${XM-34}" fill="none" stroke="var(--cold)" stroke-width="10" opacity=".22"/><path d="M${XM+34} ${Y1} H${X2} V${Y2} H${XM+18}" fill="none" stroke="var(--warm)" stroke-width="10" opacity=".22"/>`;
+  g+=`<text x="${(X1+XM)/2}" y="${Y2+26}" text-anchor="middle" font-size="11" fill="var(--cold)">Niederdruck</text><text x="${(X2+XM)/2}" y="${Y1-22}" text-anchor="middle" font-size="11" fill="var(--warm)">Hochdruck</text>`;
+  // Verdampfer und Verflüssiger als Wärmeübertrager
+  const hx=(x,col,lab)=>{let s=`<rect x="${x-26}" y="${Y1+50}" width="52" height="${Y2-Y1-100}" rx="6" fill="var(--panel)" stroke="${col}" stroke-width="2"/>`;for(let y=Y1+62;y<Y2-50;y+=12)s+=`<path d="M${x-26} ${y} h52" stroke="${col}" stroke-opacity=".25"/>`;return s+`<text class="lbl" x="${x}" y="${Y1+42}" text-anchor="middle" font-size="13" fill="var(--ink)">${lab}</text>`};
+  g+=hx(X1,"var(--cold)","Verdampfer")+hx(X2,"var(--warm)","Verflüssiger");
+  // Verdichter
+  g+=`<circle cx="${XM}" cy="${Y1}" r="32" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><path d="M${XM-22} ${Y1+14} L${XM+22} ${Y1+6} L${XM+22} ${Y1-6} L${XM-22} ${Y1-14}z" fill="none" stroke="var(--ink)" stroke-width="1.6" transform="rotate(${(t*240)%360} ${XM} ${Y1})"/><text class="lbl" x="${XM}" y="${Y1+52}" text-anchor="middle" font-size="13" fill="var(--ink)">Verdichter</text>`;
+  // Expansionsventil
+  g+=`<path d="M${XM-16} ${Y2-12} L${XM+16} ${Y2+12} L${XM+16} ${Y2-12} L${XM-16} ${Y2+12}z" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text class="lbl" x="${XM}" y="${Y2-20}" text-anchor="middle" font-size="13" fill="var(--ink)">Expansionsventil</text>`;
+  // Teilchen
+  const n=34,sp=40+r.Q*9;
+  for(let k=0;k<n;k++){const p=at(k/n*TOT+t*sp);if(Math.abs(p.x-XM)<34&&Math.abs(p.y-Y1)<34)continue;const gs=gasAt(p),rad=2.6+gs*3.6,col=C(tempAt(p));
+    g+=`<circle cx="${p.x}" cy="${p.y}" r="${rad}" fill="${col}" fill-opacity="${1-gs*.55}" stroke="${col}" stroke-width="${1+gs}"/>`}
+  // Energiepfeile, Breite ~ Leistung
+  const w=v=>Math.max(2,Math.min(22,v*1.6));
+  g+=`<path d="M18 ${(Y1+Y2)/2} H${X1-34}" stroke="var(--cold)" stroke-width="${w(r.U)}" marker-end="url(#ar)" opacity=".8"/>`;
+  g+=`<text x="16" y="${(Y1+Y2)/2-22}" font-size="12" fill="var(--cold)">Umweltwärme</text><text x="16" y="${(Y1+Y2)/2+30}" font-size="13" fill="var(--ink)">${fmt(r.U,2)} kW</text><text x="16" y="${(Y1+Y2)/2+48}" font-size="12" fill="var(--muted)">${SRC[r.s].n} ${fmt(r.tk,0)} °C</text>`;
+  g+=`<path d="M${XM} 12 V${Y1-36}" stroke="var(--warn)" stroke-width="${w(r.P)}" marker-end="url(#ar)" opacity=".85"/><text x="${XM+14}" y="26" font-size="12" fill="var(--warn)">Strom ${fmt(r.P,2)} kW</text>`;
+  g+=`<path d="M${X2+30} ${(Y1+Y2)/2} H542" stroke="var(--warm)" stroke-width="${w(r.Q)}" marker-end="url(#ar)" opacity=".8"/>`;
+  g+=`<text x="544" y="${(Y1+Y2)/2-22}" text-anchor="end" font-size="12" fill="var(--warm)">Heizwärme</text><text x="544" y="${(Y1+Y2)/2+30}" text-anchor="end" font-size="13" fill="var(--ink)">${fmt(r.Q,1)} kW</text><text x="544" y="${(Y1+Y2)/2+48}" text-anchor="end" font-size="12" fill="var(--muted)">Vorlauf ${fmt(r.tw,0)} °C</text>`;
+  $("kp").innerHTML=g;
+}
+
+/* ---------- ε über der Quellentemperatur, mit Datenblattwerten aus dem Skript ---------- */
+const WP1={35:[[-7,3],[2,3.8],[7,4.5],[10,4.9]],55:[[-7,1.72],[2,2.55],[7,2.8],[10,3.18]]};
+function epsChart(r){
+  const W=520,H=330,l=46,rt=14,tp=14,b=40,x0=-15,x1=20,y1=8,X=v=>l+(v-x0)/(x1-x0)*(W-l-rt),Y=v=>H-b-v/y1*(H-tp-b);
+  let g="";for(let v=0;v<=y1;v+=2)g+=`<line x1="${l}" x2="${W-rt}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  for(let v=-15;v<=20;v+=5)g+=`<text x="${X(v)}" y="${H-b+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${v}</text>`;
+  g+=`<text x="${(l+W)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">Temperatur der Quelle in °C</text><text x="12" y="${tp+4}" font-size="11" fill="var(--muted)">ε</text>`;
+  const curve=tw=>{let p=[];for(let v=x0;v<=x1;v+=0.5){const e=r.eta*epsC(tw,v);if(e<=y1)p.push(`${X(v).toFixed(1)},${Y(e).toFixed(1)}`)}return p.join(" ")};
+  [35,55].forEach(tw=>g+=`<polyline points="${curve(tw)}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${X(-15)+4}" y="${Y(r.eta*epsC(tw,-15))-6}" font-size="11" fill="var(--muted)">W${tw}</text>`);
+  g+=`<polyline points="${curve(r.tw)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
+  [35,55].forEach(tw=>WP1[tw].forEach(([a,e])=>g+=`<circle cx="${X(a)}" cy="${Y(e)}" r="4.5" fill="${tw==35?"var(--warm)":"var(--panel)"}" stroke="var(--warm)" stroke-width="2"><title>WP 1, A${a}/W${tw}: ε = ${fmt(e,2)}</title></circle>`));
+  g+=`<rect x="${X(0)-4.5}" y="${Y(4.7)-4.5}" width="9" height="9" fill="var(--cold)"><title>WP 2, B0/W35: ε = 4,7</title></rect>`;
+  if(r.e<=y1)g+=`<circle cx="${X(r.tk)}" cy="${Y(r.e)}" r="7" fill="none" stroke="var(--accent)" stroke-width="3"/>`;
+  $("eps").innerHTML=g;$("lg-tw").textContent=`${fmt(r.tw,0)} °C`;
+}
+
+function update(){
+  const r=calc(),c=SRC[r.s];
+  $("o-tk").textContent=`${fmt(r.tk,0)} °C`;$("o-tw").textContent=`${fmt(r.tw,0)} °C`;$("o-q").textContent=`${fmt(r.Q,1)} kW`;$("o-eta").textContent=fmt(r.eta,2);$("o-ph").textContent=`${fmt(r.ph,2)} kW (${c.hilf})`;
+  $("srcinfo").textContent=c.info;
+  $("r-ec").textContent=fmt(r.ec,2);$("r-e").textContent=fmt(r.e,2);$("r-p").textContent=fmt(r.P,2);
+  const cp=$("r-cop");cp.className="pill "+(r.cop>=3?"ok":r.cop>=2.5?"warn":"bad");cp.innerHTML=`\\(\\mathrm{COP} = ${n_(r.cop,2)}\\)`;
+  $("r-u").innerHTML=`\\(\\dot Q_U = ${n_(r.U,2)}\\,\\mathrm{kW}\\) aus der Umwelt`;
+  const sum=r.U+r.P+r.ph;[["f-u",r.U,"Umwelt"],["f-v",r.P,"Strom"],["f-h",r.ph,"Hilf"]].forEach(([id,v,t])=>{const e=$(id);e.style.flexBasis=`${v/sum*100}%`;e.textContent=v/sum>.09?`${t} ${fmt(v/sum*100,0)} %`:""});
+  let h=`<p class="hd">1 · Temperaturen in Kelvin</p>`;
+  h+=M(`T_{warm} = ${n_(r.tw,0)} + 273{,}15 = ${n_(r.tw+K0,2)}\\,\\mathrm{K}`);
+  h+=M(`T_{kalt} = ${sg(r.tk,0)} + 273{,}15 = ${n_(r.tk+K0,2)}\\,\\mathrm{K}`,`Temperaturhub ${fmt(r.tw-r.tk,0)} K`);
+  h+=`<p class="hd">2 · Carnot-Leistungszahl und Leistungsziffer</p>`;
+  h+=M(`\\varepsilon_C = \\frac{T_{warm}}{T_{warm} - T_{kalt}} = \\frac{${n_(r.tw+K0,2)}}{${n_(r.tw-r.tk,0)}} = \\mathbf{${n_(r.ec,2)}}`);
+  h+=M(`\\varepsilon = \\eta\\cdot\\varepsilon_C = ${n_(r.eta,2)}\\cdot${n_(r.ec,2)} = \\mathbf{${n_(r.e,2)}}`,"aus \\(\\eta = \\varepsilon/\\varepsilon_C\\)");
+  h+=`<p class="hd">3 · Leistungen</p>`;
+  h+=M(`P_{el,V} = \\frac{\\dot Q_{WP}}{\\varepsilon} = \\frac{${n_(r.Q,1)}}{${n_(r.e,2)}} = \\mathbf{${n_(r.P,2)}}\\,\\mathrm{kW}`);
+  h+=M(`\\dot Q_U = \\dot Q_{WP} - P_{el,V} = ${n_(r.U,2)}\\,\\mathrm{kW}`);
+  h+=M(`\\mathrm{COP} = \\frac{\\dot Q_{WP}}{P_{el,V+Hilf}} = \\frac{${n_(r.Q,1)}}{${n_(r.P,2)} + ${n_(r.ph,2)}} = \\mathbf{${n_(r.cop,2)}}`,`${c.hilf} mitgerechnet`);
+  $("calc").innerHTML=h;typeset([$("calc"),$("r-cop"),$("r-u")]);
+  epsChart(r);update.r=r;
+}
+["tk","tw","q","eta","ph"].forEach(id=>$(id).oninput=update);
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Abspielen"};if(!run)$("play").textContent="Abspielen";
+function loop(ts){const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;if(run)T+=dt;draw(update.r,T);requestAnimationFrame(loop)}
+
+/* ---------- Heizjahr ---------- */
+/* Jahresdauerlinie Ettelbruck (49,85° N 6,10° O): Tagesmittel 2015–2024 je Jahr sortiert (JDLY), Mittel über die Jahre (JDLM); ERA5 über Open-Meteo */
+const JDLY={"2015":[-3.3,-2.7,-2.7,-2.1,-1.9,-1.3,-1.2,-1.1,-0.8,-0.7,-0.5,-0.4,-0.1,0.0,0.0,0.1,0.1,0.1,0.2,0.4,0.4,0.9,1.1,1.2,1.3,1.5,1.5,1.5,1.7,1.9,2.0,2.0,2.0,2.0,2.2,2.2,2.2,2.3,2.4,2.5,2.5,2.6,2.7,2.8,2.8,2.9,2.9,3.0,3.0,3.1,3.2,3.3,3.3,3.4,3.4,3.4,3.4,3.6,3.7,3.7,3.8,3.9,3.9,3.9,3.9,4.0,4.0,4.0,4.0,4.0,4.1,4.1,4.1,4.2,4.4,4.5,4.5,4.5,4.6,4.6,4.6,4.7,4.7,4.8,4.9,5.0,5.1,5.2,5.2,5.2,5.3,5.3,5.4,5.4,5.5,5.5,5.7,5.7,5.9,5.9,6.0,6.0,6.1,6.2,6.3,6.3,6.4,6.5,6.5,6.5,6.8,6.8,6.8,6.9,7.1,7.1,7.1,7.3,7.4,7.4,7.4,7.4,7.5,7.5,7.5,7.5,7.6,7.6,7.6,7.6,7.6,7.7,7.8,8.0,8.0,8.1,8.1,8.2,8.2,8.3,8.6,8.8,8.9,8.9,8.9,9.0,9.0,9.0,9.1,9.2,9.3,9.3,9.3,9.3,9.4,9.4,9.5,9.6,9.7,9.7,9.7,9.7,9.8,9.8,9.9,9.9,10.0,10.0,10.0,10.0,10.0,10.1,10.1,10.2,10.2,10.2,10.3,10.3,10.4,10.4,10.4,10.4,10.5,10.6,10.7,10.8,10.9,10.9,11.0,11.2,11.2,11.2,11.3,11.3,11.3,11.3,11.4,11.5,11.5,11.6,11.6,11.6,11.6,11.8,11.8,11.8,11.9,11.9,11.9,11.9,11.9,11.9,12.0,12.1,12.1,12.1,12.2,12.2,12.3,12.3,12.3,12.4,12.4,12.5,12.5,12.5,12.6,12.7,12.7,12.7,12.7,12.8,12.8,12.8,12.8,12.9,13.0,13.1,13.1,13.2,13.2,13.3,13.3,13.4,13.4,13.5,13.5,13.5,13.5,13.5,13.5,13.5,13.6,13.6,13.7,13.7,13.8,13.8,13.8,13.9,13.9,13.9,14.0,14.0,14.0,14.1,14.3,14.3,14.7,14.7,14.7,14.8,14.8,14.8,14.8,14.9,15.0,15.1,15.1,15.2,15.3,15.5,15.5,15.5,15.5,15.6,15.8,15.8,15.9,15.9,15.9,15.9,16.0,16.1,16.2,16.3,16.4,16.4,16.4,16.5,16.5,16.6,16.7,16.8,16.8,16.9,17.2,17.4,17.4,17.5,17.8,17.9,18.0,18.0,18.1,18.4,18.4,18.8,19.0,19.0,19.0,19.1,19.1,19.3,19.4,19.5,19.5,19.7,19.9,20.0,20.1,20.1,20.2,20.2,20.4,20.4,20.5,20.6,20.7,20.9,21.1,21.4,21.5,21.5,21.7,21.7,22.4,22.6,22.6,22.7,22.9,23.2,23.2,23.3,23.9,23.9,24.0,24.3,25.4,25.5,25.8,26.3,26.5,28.2,28.9],"2016":[-6.7,-6.3,-5.1,-3.1,-2.7,-2.1,-1.4,-1.1,-0.8,-0.7,-0.7,-0.6,-0.6,0.2,0.2,0.2,0.3,0.4,0.6,0.7,0.7,0.7,0.7,0.8,0.9,1.1,1.1,1.2,1.2,1.2,1.4,1.4,1.4,1.4,1.5,1.6,1.8,1.9,1.9,1.9,1.9,2.0,2.1,2.3,2.4,2.4,2.5,2.7,2.7,2.7,2.9,2.9,2.9,2.9,3.0,3.0,3.0,3.0,3.0,3.1,3.1,3.2,3.3,3.4,3.4,3.5,3.6,3.6,3.7,3.7,3.7,3.7,3.7,3.8,3.8,3.8,3.8,3.9,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.1,4.2,4.3,4.5,4.5,4.6,4.6,4.6,4.6,4.7,4.7,4.7,4.8,4.8,5.1,5.1,5.2,5.2,5.2,5.4,5.4,5.5,5.6,5.6,5.6,5.6,5.7,5.7,5.8,5.8,6.0,6.0,6.0,6.0,6.1,6.1,6.2,6.2,6.2,6.4,6.4,6.5,6.6,6.6,6.6,6.6,6.7,6.7,6.7,6.7,6.8,6.8,6.9,6.9,7.0,7.0,7.0,7.0,7.0,7.3,7.3,7.4,7.4,7.4,7.5,7.5,7.6,7.7,7.7,7.7,7.8,7.9,7.9,8.0,8.0,8.1,8.1,8.2,8.3,8.3,8.3,8.3,8.4,8.5,8.7,8.7,8.7,8.7,8.8,8.8,8.8,8.9,8.9,9.0,9.1,9.1,9.2,9.2,9.3,9.4,9.5,9.6,9.7,9.9,9.9,9.9,10.0,10.1,10.1,10.1,10.1,10.2,10.2,10.4,10.4,10.4,10.5,10.6,10.8,10.8,10.9,11.1,11.2,11.3,11.3,11.3,11.4,11.4,11.5,11.5,11.6,11.6,11.7,11.8,11.8,11.9,12.0,12.1,12.1,12.3,12.3,12.7,13.0,13.4,13.4,13.5,13.5,13.6,13.8,13.9,14.2,14.2,14.3,14.3,14.3,14.4,14.4,14.4,14.4,14.5,14.6,14.6,14.6,14.8,14.9,15.0,15.0,15.1,15.3,15.4,15.4,15.5,15.5,15.6,15.6,15.6,15.6,15.7,15.8,15.8,15.8,15.8,15.9,15.9,15.9,16.0,16.2,16.4,16.5,16.5,16.5,16.5,16.6,16.6,16.6,16.7,16.7,16.7,16.8,16.8,16.9,17.0,17.0,17.1,17.1,17.1,17.1,17.1,17.1,17.1,17.1,17.2,17.2,17.3,17.4,17.4,17.4,17.5,17.6,17.6,17.8,17.9,18.1,18.2,18.2,18.2,18.3,18.3,18.3,18.4,18.4,18.5,18.5,18.5,18.6,18.6,18.6,18.6,18.7,18.8,18.9,18.9,19.0,19.0,19.1,19.3,19.3,19.4,19.4,19.4,19.5,19.6,19.7,19.8,20.0,20.0,20.1,20.2,20.3,20.3,20.4,20.6,20.6,20.7,20.9,21.4,21.5,21.6,21.9,22.2,22.3,22.5,22.8,23.1,23.3,23.6,24.0,24.3,25.4,25.9],"2017":[-5.4,-5.2,-4.7,-4.4,-4.2,-4.0,-3.8,-3.7,-3.7,-3.3,-2.4,-2.3,-2.0,-1.7,-1.5,-1.3,-1.0,-0.9,-0.7,-0.3,-0.1,-0.1,-0.0,0.1,0.2,0.2,0.3,0.7,0.9,1.1,1.2,1.2,1.3,1.3,1.3,1.4,1.6,1.6,1.6,1.6,1.7,1.9,2.0,2.1,2.2,2.3,2.3,2.4,2.6,2.7,2.7,2.8,2.9,2.9,3.0,3.1,3.2,3.2,3.4,3.4,3.4,3.5,3.6,3.6,3.6,3.6,3.7,3.7,3.9,4.0,4.0,4.0,4.0,4.1,4.2,4.3,4.4,4.5,4.5,4.6,4.6,4.6,4.6,4.7,4.7,4.7,4.7,4.8,4.9,4.9,4.9,5.0,5.1,5.1,5.1,5.2,5.2,5.3,5.4,5.4,5.5,5.5,5.5,5.6,5.6,5.7,5.8,5.8,6.0,6.1,6.2,6.2,6.2,6.6,6.7,6.7,6.8,6.8,6.8,6.8,6.9,6.9,6.9,7.0,7.0,7.1,7.1,7.3,7.5,7.5,7.5,7.6,7.6,7.6,7.7,7.8,7.8,7.9,7.9,7.9,7.9,8.0,8.0,8.1,8.2,8.3,8.4,8.5,8.7,8.9,8.9,8.9,9.0,9.0,9.0,9.0,9.0,9.1,9.1,9.2,9.2,9.2,9.2,9.2,9.2,9.3,9.3,9.3,9.3,9.4,9.4,9.4,9.5,9.5,9.7,9.7,9.8,9.8,9.9,10.0,10.1,10.3,10.3,10.3,10.5,10.5,10.6,10.6,10.6,10.6,10.7,10.7,10.9,10.9,11.0,11.0,11.0,11.1,11.1,11.1,11.2,11.3,11.4,11.5,11.5,11.6,11.6,11.7,11.8,11.9,12.0,12.0,12.1,12.1,12.3,12.3,12.6,12.7,12.8,12.8,12.8,13.0,13.1,13.1,13.1,13.3,13.3,13.4,13.4,13.4,13.4,13.4,13.4,13.6,13.6,13.6,13.7,13.7,13.8,13.8,13.9,14.0,14.0,14.0,14.0,14.1,14.1,14.1,14.1,14.3,14.3,14.5,14.5,14.5,14.6,14.7,14.7,14.7,14.8,14.8,14.8,14.9,15.0,15.0,15.1,15.2,15.3,15.5,15.6,15.8,15.8,15.9,16.0,16.0,16.0,16.1,16.1,16.2,16.4,16.6,16.6,16.7,16.8,16.8,16.9,16.9,17.0,17.0,17.0,17.0,17.0,17.1,17.2,17.2,17.2,17.3,17.3,17.3,17.3,17.4,17.7,17.9,17.9,18.0,18.0,18.2,18.2,18.2,18.3,18.3,18.4,18.6,18.6,18.6,18.6,18.8,18.8,18.9,18.9,19.0,19.1,19.2,19.3,19.3,19.4,19.5,19.5,19.5,19.6,19.8,20.0,20.0,20.1,20.2,20.3,20.3,20.4,20.5,20.5,20.5,20.7,20.7,20.7,20.7,21.0,21.1,21.1,21.1,21.2,21.3,21.5,21.9,22.1,22.1,22.5,22.9,23.0,23.0,23.1,23.2,23.3,24.1,25.3,25.9,26.2],"2018":[-6.5,-5.9,-4.9,-4.0,-3.4,-3.2,-2.6,-2.4,-2.4,-2.0,-1.6,-1.5,-1.4,-1.3,-1.2,-1.2,-1.0,-1.0,-1.0,-1.0,-0.9,-0.7,-0.7,-0.7,-0.5,-0.5,-0.5,-0.4,-0.0,0.3,0.4,0.4,0.4,0.7,0.7,0.8,1.0,1.0,1.3,1.3,1.4,1.4,1.6,1.7,1.7,1.7,1.9,2.0,2.0,2.2,2.2,2.3,2.4,2.5,2.5,2.6,2.8,3.1,3.2,3.3,3.4,3.4,3.4,3.6,3.9,4.0,4.0,4.2,4.2,4.3,4.3,4.4,4.4,4.4,4.4,4.5,4.5,4.5,4.5,4.5,4.5,4.7,4.9,4.9,4.9,5.0,5.0,5.1,5.2,5.2,5.2,5.2,5.3,5.3,5.3,5.3,5.4,5.4,5.5,5.5,5.5,5.6,5.6,5.7,5.7,5.8,5.8,6.0,6.1,6.1,6.1,6.2,6.2,6.2,6.2,6.3,6.3,6.5,6.5,6.5,6.6,6.6,6.7,6.7,6.7,6.8,6.8,6.9,6.9,6.9,6.9,7.2,7.3,7.5,7.5,7.6,7.6,7.7,7.9,7.9,8.1,8.4,8.5,8.5,8.8,9.0,9.1,9.1,9.2,9.2,9.3,9.3,9.3,9.4,9.4,9.5,9.6,9.7,9.7,9.7,9.8,9.8,9.8,9.9,10.0,10.0,10.1,10.2,10.3,10.4,10.5,10.6,10.8,10.9,10.9,11.0,11.2,11.3,11.3,11.4,11.4,11.4,11.5,11.6,11.6,11.7,11.8,11.9,11.9,12.0,12.0,12.0,12.1,12.2,12.3,12.5,12.6,12.7,12.7,12.7,12.8,12.8,12.8,12.8,12.9,13.0,13.1,13.3,13.4,13.5,13.6,13.8,13.8,13.9,13.9,14.0,14.0,14.0,14.1,14.1,14.1,14.3,14.4,14.6,14.7,14.8,14.9,14.9,15.2,15.2,15.3,15.3,15.3,15.3,15.4,15.4,15.4,15.4,15.6,15.9,16.1,16.1,16.1,16.1,16.1,16.2,16.3,16.3,16.3,16.3,16.5,16.5,16.5,16.5,16.5,16.6,16.6,16.7,16.8,16.8,16.9,16.9,17.0,17.0,17.0,17.0,17.3,17.4,17.4,17.4,17.5,17.5,17.6,17.7,17.8,17.9,17.9,17.9,18.0,18.0,18.1,18.1,18.1,18.2,18.2,18.3,18.3,18.3,18.3,18.4,18.5,18.5,18.5,18.5,18.8,18.8,18.8,18.9,19.0,19.1,19.1,19.3,19.3,19.4,19.4,19.5,19.5,19.6,19.7,19.8,19.9,20.0,20.0,20.1,20.1,20.1,20.2,20.2,20.4,20.4,20.4,20.4,20.5,20.5,20.5,20.5,20.6,20.6,20.6,20.6,20.7,20.7,20.7,21.2,21.3,21.3,21.4,21.4,21.5,21.5,21.6,21.6,21.6,21.8,21.9,22.1,22.1,22.2,22.4,22.7,22.8,22.9,23.3,23.7,24.1,24.5,24.6,25.0,25.1,26.0,27.0,27.0,27.2,27.5,27.8],"2019":[-3.7,-3.4,-2.7,-2.5,-2.4,-1.9,-1.5,-1.0,-0.8,-0.5,-0.4,-0.4,0.4,0.5,0.6,0.6,0.7,0.8,0.9,1.0,1.3,1.4,1.4,1.4,1.4,1.5,1.6,1.6,1.6,1.7,1.7,1.8,1.8,1.8,2.0,2.1,2.1,2.2,2.3,2.6,2.8,2.8,2.9,3.0,3.0,3.0,3.2,3.3,3.4,3.4,3.4,3.5,3.7,3.7,3.7,3.7,3.8,3.8,3.9,3.9,3.9,3.9,4.0,4.0,4.0,4.0,4.0,4.1,4.1,4.1,4.1,4.3,4.4,4.5,4.6,4.7,4.7,4.7,4.7,4.8,4.9,5.0,5.1,5.1,5.1,5.1,5.2,5.2,5.3,5.3,5.4,5.4,5.4,5.4,5.4,5.5,5.5,5.6,5.7,5.7,5.7,5.8,5.8,5.8,5.9,6.0,6.0,6.0,6.0,6.1,6.3,6.4,6.4,6.5,6.5,6.6,6.6,6.6,6.6,6.8,6.9,6.9,7.1,7.1,7.2,7.2,7.2,7.2,7.3,7.4,7.4,7.5,7.5,7.6,7.7,7.8,7.8,7.9,7.9,8.0,8.0,8.1,8.1,8.2,8.2,8.3,8.4,8.5,8.6,8.6,8.6,8.7,8.7,8.7,8.8,8.8,8.8,8.8,8.9,9.0,9.1,9.2,9.2,9.3,9.3,9.3,9.3,9.4,9.5,9.5,9.5,9.6,9.6,9.6,9.7,9.7,9.8,9.8,9.9,10.1,10.2,10.4,10.5,10.6,10.6,10.6,10.6,10.6,10.7,10.7,10.7,10.8,10.8,10.9,10.9,10.9,11.0,11.1,11.2,11.3,11.4,11.4,11.5,11.9,12.1,12.1,12.2,12.2,12.2,12.2,12.4,12.4,12.4,12.5,12.6,12.6,12.6,12.6,12.7,12.9,13.1,13.1,13.3,13.3,13.3,13.3,13.4,13.5,13.6,13.6,13.7,13.7,13.7,13.8,13.9,13.9,13.9,14.0,14.0,14.1,14.1,14.1,14.2,14.3,14.4,14.4,14.5,14.5,14.6,14.6,14.7,14.8,14.9,15.0,15.0,15.1,15.1,15.2,15.3,15.3,15.3,15.4,15.5,15.5,15.5,15.6,15.6,15.6,15.7,15.8,15.8,15.9,15.9,15.9,16.0,16.1,16.3,16.3,16.3,16.4,16.4,16.4,16.5,16.5,16.7,16.7,17.0,17.0,17.0,17.0,17.0,17.2,17.2,17.4,17.5,17.6,17.6,17.7,17.7,17.9,18.0,18.0,18.0,18.1,18.1,18.1,18.2,18.2,18.3,18.4,18.4,18.5,18.6,18.7,18.7,18.8,18.8,19.1,19.2,19.3,19.3,19.3,19.5,19.6,19.8,19.9,19.9,19.9,19.9,20.1,20.2,20.3,20.5,20.5,20.7,20.7,20.8,21.0,21.1,21.1,21.2,21.2,21.2,21.3,21.3,21.4,21.5,22.0,22.0,22.5,22.6,23.4,23.9,24.0,24.2,24.5,24.7,25.5,25.7,25.9,26.2,27.1,28.4,28.4,30.5],"2020":[-1.1,-0.4,-0.2,-0.0,0.2,0.3,0.7,0.8,1.0,1.2,1.3,1.3,1.3,1.3,1.5,1.5,1.5,1.8,2.0,2.1,2.1,2.1,2.1,2.1,2.2,2.2,2.3,2.3,2.4,2.4,2.5,2.5,2.6,2.6,2.7,2.7,2.8,2.8,2.8,2.9,2.9,2.9,3.0,3.1,3.2,3.2,3.4,3.4,3.5,3.5,3.5,3.7,3.8,3.8,3.9,3.9,4.0,4.1,4.1,4.1,4.1,4.1,4.1,4.2,4.3,4.3,4.4,4.5,4.7,4.8,4.9,5.0,5.0,5.0,5.2,5.2,5.2,5.3,5.3,5.4,5.4,5.5,5.6,5.7,5.7,5.7,5.8,5.9,6.0,6.1,6.2,6.3,6.3,6.4,6.4,6.4,6.4,6.5,6.5,6.6,6.7,6.9,7.2,7.2,7.2,7.2,7.3,7.3,7.3,7.4,7.4,7.5,7.6,7.6,7.7,7.7,7.7,7.8,7.9,8.0,8.1,8.1,8.1,8.4,8.4,8.4,8.4,8.5,8.5,8.5,8.6,8.8,8.8,8.9,8.9,8.9,9.0,9.0,9.1,9.1,9.1,9.1,9.1,9.2,9.2,9.2,9.2,9.3,9.4,9.4,9.4,9.4,9.5,9.5,9.6,9.6,9.6,9.7,9.7,9.8,9.8,9.8,9.9,9.9,10.2,10.3,10.3,10.3,10.3,10.3,10.4,10.4,10.4,10.5,10.5,10.5,10.5,10.6,10.6,10.6,10.6,10.6,10.9,10.9,11.1,11.4,11.4,11.4,11.5,11.5,11.6,11.7,11.8,11.8,12.0,12.1,12.2,12.2,12.3,12.3,12.3,12.4,12.4,12.4,12.5,12.6,12.6,12.7,12.7,12.9,13.0,13.0,13.2,13.3,13.3,13.3,13.4,13.4,13.4,13.6,13.8,13.8,14.2,14.2,14.3,14.3,14.4,14.5,14.5,14.5,14.6,14.6,14.6,14.7,14.7,14.8,14.8,14.9,15.0,15.1,15.1,15.2,15.2,15.2,15.3,15.3,15.3,15.4,15.4,15.5,15.5,15.5,15.5,15.6,15.6,15.8,15.8,15.8,15.9,15.9,15.9,15.9,16.0,16.0,16.0,16.1,16.1,16.2,16.2,16.2,16.3,16.4,16.4,16.5,16.6,16.6,16.6,16.7,16.8,16.8,16.9,16.9,17.0,17.1,17.2,17.2,17.2,17.3,17.3,17.3,17.3,17.5,17.5,17.5,17.5,17.6,17.6,17.6,17.6,17.6,17.7,17.7,17.7,17.8,17.9,17.9,18.0,18.1,18.1,18.2,18.2,18.5,18.5,18.6,18.6,18.7,18.7,18.7,18.8,18.8,19.2,19.2,19.5,19.5,19.5,19.7,19.7,19.7,19.8,19.8,19.9,20.0,20.0,20.0,20.4,20.4,20.5,20.8,20.8,20.9,21.0,21.1,21.3,21.6,21.7,21.8,21.9,21.9,22.0,22.3,22.4,22.9,22.9,23.5,24.5,24.7,24.7,25.2,25.6,25.8,25.9,26.1,27.2,27.3,28.1],"2021":[-5.8,-5.0,-4.9,-4.4,-4.0,-3.7,-2.8,-1.9,-1.5,-1.5,-0.7,-0.6,0.1,0.2,0.4,0.5,0.6,0.8,0.8,0.9,1.0,1.0,1.1,1.1,1.1,1.2,1.2,1.2,1.3,1.3,1.3,1.4,1.4,1.4,1.5,1.6,1.6,1.7,1.8,1.9,1.9,2.0,2.0,2.2,2.5,2.5,2.5,2.5,2.5,2.5,2.6,2.7,2.7,2.7,2.8,2.8,2.9,2.9,2.9,3.0,3.0,3.0,3.2,3.2,3.2,3.3,3.3,3.4,3.4,3.4,3.5,3.5,3.7,3.8,3.9,3.9,3.9,4.0,4.0,4.0,4.1,4.1,4.2,4.2,4.2,4.4,4.5,4.5,4.6,4.7,4.8,5.2,5.3,5.4,5.4,5.5,5.6,5.6,5.7,5.7,5.8,5.8,5.8,5.9,5.9,5.9,5.9,5.9,6.0,6.0,6.0,6.0,6.0,6.1,6.1,6.1,6.1,6.2,6.2,6.2,6.4,6.4,6.4,6.4,6.5,6.5,6.6,6.6,6.7,6.7,6.7,6.8,6.8,6.9,6.9,6.9,6.9,7.0,7.0,7.0,7.1,7.2,7.2,7.3,7.3,7.4,7.4,7.5,7.6,7.6,7.7,7.7,7.8,7.9,7.9,8.0,8.0,8.0,8.0,8.0,8.1,8.1,8.1,8.1,8.2,8.4,8.4,8.5,8.5,8.6,8.6,8.6,8.7,8.8,8.8,8.9,8.9,9.0,9.0,9.1,9.2,9.2,9.3,9.3,9.3,9.4,9.5,9.6,9.6,9.7,9.7,9.7,9.8,9.8,9.9,10.0,10.0,10.1,10.1,10.1,10.2,10.2,10.3,10.3,10.3,10.4,10.4,10.4,10.5,10.6,10.7,10.7,10.8,11.0,11.0,11.1,11.1,11.1,11.1,11.2,11.5,11.7,11.7,11.8,11.8,11.8,11.8,11.9,12.1,12.2,12.2,12.3,12.3,12.5,12.8,13.1,13.4,13.8,13.8,13.9,13.9,14.0,14.1,14.1,14.2,14.2,14.3,14.4,14.6,14.6,14.9,14.9,15.0,15.0,15.1,15.1,15.2,15.2,15.2,15.3,15.4,15.4,15.4,15.5,15.5,15.5,15.6,15.7,15.7,15.8,15.8,15.9,15.9,15.9,16.0,16.0,16.0,16.0,16.1,16.1,16.1,16.2,16.3,16.4,16.4,16.4,16.5,16.5,16.5,16.6,16.8,16.8,16.8,16.9,16.9,16.9,17.0,17.0,17.0,17.1,17.1,17.1,17.1,17.1,17.1,17.2,17.2,17.2,17.2,17.3,17.3,17.3,17.4,17.5,17.6,17.7,17.8,17.9,17.9,17.9,17.9,18.0,18.0,18.1,18.1,18.1,18.3,18.3,18.3,18.3,18.4,18.6,18.6,18.6,18.6,18.8,19.0,19.0,19.0,19.0,19.0,19.2,19.3,19.4,19.4,19.4,19.5,19.6,19.7,19.7,19.7,19.8,19.8,20.1,20.2,20.3,20.3,20.7,20.8,20.9,21.9,23.1,23.4,24.4,25.1],"2022":[-4.4,-3.4,-3.4,-3.3,-2.6,-2.6,-2.5,-1.1,-0.8,-0.6,-0.5,-0.4,-0.1,0.3,0.3,0.4,0.5,0.8,0.8,0.9,1.1,1.4,1.4,1.4,1.5,1.6,1.6,1.7,1.7,1.9,1.9,2.0,2.0,2.0,2.0,2.1,2.1,2.1,2.2,2.2,2.4,2.4,2.5,2.5,2.5,2.5,2.5,2.6,2.6,2.6,2.7,2.7,2.7,2.8,2.9,3.0,3.0,3.2,3.2,3.3,3.3,3.5,3.6,3.8,3.9,4.1,4.1,4.1,4.2,4.3,4.3,4.7,5.0,5.1,5.1,5.1,5.2,5.2,5.4,5.4,5.5,5.7,5.7,5.7,5.7,5.8,5.9,5.9,5.9,5.9,5.9,6.1,6.2,6.3,6.5,6.7,6.7,6.8,6.8,6.9,6.9,7.0,7.0,7.1,7.1,7.1,7.2,7.2,7.2,7.3,7.4,7.5,7.5,7.6,7.8,7.8,7.8,7.9,7.9,7.9,8.0,8.0,8.0,8.2,8.3,8.5,8.5,8.5,8.7,8.7,8.7,8.8,8.8,8.8,8.8,8.9,8.9,9.0,9.0,9.1,9.1,9.1,9.2,9.2,9.2,9.3,9.3,9.3,9.5,9.5,9.5,9.6,9.6,9.6,9.7,9.8,9.9,9.9,9.9,9.9,10.0,10.1,10.1,10.1,10.2,10.3,10.4,10.4,10.4,10.4,10.5,10.6,10.6,10.7,10.7,10.7,10.8,10.8,10.9,10.9,11.0,11.2,11.2,11.2,11.3,11.3,11.4,11.4,11.5,11.6,11.6,11.6,11.6,11.7,11.7,11.8,11.8,11.9,12.2,12.2,12.3,12.4,12.5,12.5,12.5,12.5,12.6,12.7,12.7,12.9,12.9,13.0,13.1,13.4,13.6,13.6,13.6,13.7,13.9,13.9,13.9,14.0,14.0,14.1,14.1,14.2,14.2,14.2,14.2,14.3,14.3,14.4,14.4,14.5,14.7,14.7,14.7,14.8,14.9,14.9,15.0,15.1,15.1,15.1,15.4,15.4,15.6,15.6,15.7,15.7,15.8,15.9,15.9,16.0,16.0,16.1,16.3,16.3,16.3,16.3,16.4,16.4,16.4,16.4,16.5,16.5,16.5,16.5,16.6,16.7,16.9,17.1,17.1,17.2,17.2,17.4,17.7,17.8,17.9,17.9,17.9,18.0,18.2,18.2,18.3,18.4,18.5,18.5,18.5,18.6,18.7,18.7,18.8,18.8,18.9,18.9,18.9,18.9,19.0,19.0,19.0,19.1,19.2,19.3,19.3,19.4,19.4,19.4,19.4,19.5,19.6,19.7,19.8,20.0,20.0,20.0,20.1,20.1,20.1,20.2,20.3,20.4,20.4,20.4,20.4,20.5,20.6,20.6,20.8,21.0,21.0,21.2,21.2,21.2,21.2,21.3,21.3,21.4,21.4,21.7,21.7,21.7,22.0,22.0,22.0,22.0,22.1,22.4,22.6,22.9,23.4,23.5,23.7,23.9,24.0,24.1,24.3,24.4,24.4,24.6,24.7,25.0,25.5,26.1,27.4],"2023":[-2.4,-2.3,-1.2,-1.0,-1.0,-0.8,-0.7,-0.4,-0.4,-0.4,-0.3,-0.3,0.0,-0.0,0.2,0.3,0.4,0.4,0.5,0.7,0.8,0.8,1.1,1.1,1.3,1.4,1.8,1.9,2.2,2.2,2.2,2.3,2.4,2.4,2.4,2.5,2.6,2.6,2.8,2.8,2.9,2.9,3.0,3.1,3.1,3.1,3.1,3.2,3.2,3.2,3.4,3.4,3.5,3.9,3.9,4.0,4.1,4.1,4.2,4.2,4.4,4.5,4.5,4.5,4.9,5.1,5.1,5.2,5.3,5.4,5.4,5.4,5.5,5.5,5.5,5.6,5.6,5.7,5.9,6.0,6.0,6.0,6.0,6.1,6.1,6.1,6.2,6.4,6.6,6.6,6.7,6.7,6.8,6.8,6.9,6.9,7.0,7.1,7.1,7.1,7.1,7.2,7.3,7.3,7.3,7.4,7.4,7.4,7.4,7.5,7.5,7.6,7.6,7.6,7.6,7.7,7.9,7.9,7.9,8.0,8.1,8.1,8.1,8.1,8.2,8.2,8.2,8.3,8.3,8.3,8.3,8.3,8.4,8.4,8.5,8.5,8.6,8.6,8.7,8.7,8.7,8.8,8.8,8.9,9.0,9.0,9.0,9.0,9.1,9.1,9.2,9.2,9.2,9.2,9.3,9.3,9.4,9.5,9.5,9.5,9.5,9.6,9.7,9.7,9.8,9.8,9.8,9.9,9.9,10.0,10.0,10.1,10.1,10.1,10.2,10.4,10.4,10.4,10.4,10.5,10.6,10.7,10.7,10.8,10.9,10.9,11.0,11.1,11.1,11.2,11.3,11.4,11.4,11.4,11.5,11.5,11.6,11.7,11.7,11.9,12.0,12.0,12.0,12.1,12.1,12.1,12.2,12.4,12.6,12.7,12.9,13.1,13.1,13.3,13.4,13.5,13.6,13.7,13.7,13.8,13.8,13.9,13.9,13.9,14.0,14.1,14.1,14.1,14.2,14.5,14.5,14.5,14.6,14.6,14.6,14.7,14.8,14.8,14.9,14.9,15.0,15.0,15.2,15.3,15.4,15.6,15.7,15.7,15.8,15.9,15.9,15.9,15.9,15.9,15.9,16.1,16.4,16.5,16.6,16.7,16.8,16.8,16.8,16.9,16.9,17.0,17.0,17.1,17.1,17.2,17.2,17.2,17.3,17.3,17.3,17.4,17.4,17.5,17.5,17.6,17.6,17.6,17.8,17.8,17.8,17.9,18.0,18.0,18.0,18.0,18.0,18.1,18.1,18.2,18.4,18.4,18.4,18.5,18.6,18.7,18.8,18.8,18.9,18.9,19.0,19.1,19.1,19.2,19.2,19.2,19.3,19.4,19.5,19.5,19.6,19.7,19.8,19.8,19.9,20.0,20.0,20.0,20.1,20.3,20.3,20.3,20.3,20.4,20.4,20.5,20.5,20.6,20.7,20.7,20.8,20.8,20.8,20.8,20.9,21.0,21.2,21.3,21.3,21.3,21.5,21.9,22.0,22.0,22.0,22.2,22.4,22.5,22.5,22.6,22.7,22.9,22.9,23.0,23.2,23.3,23.3,23.4,24.0,24.2,24.4],"2024":[-5.4,-3.8,-3.2,-2.7,-2.4,-2.3,-1.7,-1.7,-1.2,-0.9,-0.9,-0.8,-0.8,-0.6,-0.5,-0.3,-0.2,-0.2,-0.2,-0.1,-0.0,0.1,0.2,0.2,0.3,0.7,1.1,1.3,1.4,1.4,2.3,2.5,2.7,2.9,3.2,3.4,3.6,3.7,3.7,3.7,3.8,3.8,3.9,3.9,4.0,4.2,4.2,4.3,4.4,4.4,4.4,4.5,4.6,4.7,4.7,4.8,4.8,4.9,4.9,5.0,5.0,5.1,5.1,5.1,5.2,5.2,5.4,5.5,5.5,5.6,5.6,5.6,5.7,5.7,5.8,5.9,5.9,5.9,5.9,5.9,5.9,6.0,6.1,6.1,6.1,6.1,6.2,6.3,6.3,6.3,6.3,6.4,6.5,6.7,6.7,6.8,6.8,6.8,6.9,6.9,6.9,6.9,7.0,7.0,7.0,7.1,7.2,7.3,7.4,7.4,7.4,7.5,7.6,7.6,7.8,7.8,7.8,7.9,7.9,7.9,8.0,8.0,8.1,8.2,8.2,8.2,8.3,8.3,8.4,8.4,8.4,8.5,8.6,8.6,8.6,8.6,8.7,8.7,8.8,8.8,8.8,8.9,9.0,9.0,9.0,9.0,9.0,9.1,9.1,9.2,9.2,9.2,9.4,9.4,9.5,9.5,9.5,9.6,9.6,9.9,9.9,9.9,10.1,10.1,10.1,10.2,10.2,10.3,10.3,10.3,10.3,10.4,10.4,10.4,10.5,10.5,10.5,10.6,10.6,10.8,10.9,10.9,11.0,11.0,11.1,11.1,11.2,11.2,11.2,11.2,11.3,11.4,11.6,11.7,11.7,11.9,11.9,11.9,11.9,12.1,12.1,12.1,12.3,12.3,12.4,12.4,12.5,12.6,12.6,12.7,12.7,12.8,12.9,12.9,12.9,13.0,13.0,13.1,13.2,13.3,13.5,13.5,13.7,13.7,13.7,13.8,13.9,13.9,14.0,14.0,14.0,14.0,14.0,14.1,14.1,14.1,14.1,14.2,14.2,14.2,14.2,14.3,14.3,14.4,14.5,14.6,14.6,14.7,14.7,14.7,14.8,14.8,14.9,15.0,15.0,15.0,15.0,15.0,15.1,15.2,15.2,15.2,15.2,15.2,15.2,15.4,15.5,15.6,15.6,15.6,15.6,15.6,15.6,15.7,15.8,15.9,16.0,16.0,16.1,16.4,16.5,16.5,16.6,16.6,16.6,16.7,16.7,16.7,16.7,16.7,16.8,16.9,17.0,17.1,17.1,17.3,17.4,17.6,17.6,17.8,17.9,17.9,17.9,18.1,18.1,18.2,18.2,18.2,18.2,18.2,18.4,18.5,18.5,18.5,18.6,18.6,18.6,18.8,18.8,18.9,19.1,19.2,19.5,19.5,19.6,19.7,19.7,19.9,20.0,20.0,20.1,20.1,20.1,20.1,20.2,20.3,20.4,20.4,20.4,20.5,20.6,20.8,20.8,20.9,20.9,21.0,21.1,21.1,21.3,21.4,21.8,21.9,22.1,22.3,22.4,22.6,22.6,22.8,22.8,23.1,23.3,23.3,24.0,25.2,26.0]};
+const JDLM=[-4.5,-3.8,-3.3,-2.8,-2.4,-2.2,-1.8,-1.4,-1.1,-0.9,-0.7,-0.6,-0.3,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.8,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.7,1.8,1.8,1.9,1.9,2.0,2.1,2.2,2.3,2.3,2.4,2.5,2.6,2.7,2.7,2.8,2.9,2.9,3.0,3.0,3.1,3.2,3.2,3.3,3.4,3.4,3.5,3.6,3.6,3.7,3.7,3.8,3.9,3.9,4.0,4.1,4.2,4.2,4.3,4.4,4.4,4.5,4.5,4.6,4.7,4.8,4.8,4.8,4.9,4.9,5.0,5.0,5.1,5.1,5.1,5.2,5.3,5.4,5.5,5.5,5.5,5.6,5.7,5.7,5.8,5.8,5.9,6.0,6.0,6.1,6.1,6.2,6.2,6.3,6.3,6.4,6.5,6.5,6.5,6.6,6.7,6.7,6.8,6.8,6.9,7.0,7.0,7.1,7.1,7.2,7.2,7.3,7.3,7.4,7.4,7.5,7.5,7.6,7.7,7.7,7.7,7.8,7.8,7.9,7.9,8.0,8.0,8.1,8.1,8.2,8.2,8.3,8.4,8.4,8.5,8.6,8.6,8.7,8.8,8.8,8.9,8.9,8.9,9.0,9.0,9.1,9.1,9.2,9.2,9.3,9.3,9.3,9.4,9.4,9.5,9.6,9.6,9.7,9.7,9.8,9.8,9.8,9.9,9.9,10.0,10.0,10.1,10.2,10.2,10.3,10.3,10.4,10.5,10.6,10.7,10.7,10.8,10.8,10.9,11.0,11.0,11.1,11.1,11.2,11.2,11.3,11.4,11.4,11.5,11.6,11.6,11.7,11.7,11.8,11.9,11.9,12.0,12.1,12.2,12.3,12.3,12.4,12.5,12.6,12.7,12.7,12.8,12.8,12.9,13.0,13.1,13.2,13.3,13.3,13.4,13.4,13.5,13.6,13.7,13.8,13.8,13.8,13.9,14.0,14.1,14.1,14.2,14.3,14.4,14.4,14.5,14.6,14.6,14.6,14.7,14.8,14.8,14.9,14.9,15.0,15.1,15.1,15.2,15.2,15.3,15.4,15.4,15.5,15.5,15.6,15.6,15.6,15.7,15.7,15.8,15.8,15.9,16.0,16.1,16.1,16.2,16.2,16.3,16.4,16.4,16.5,16.6,16.6,16.7,16.8,16.8,16.9,16.9,17.0,17.0,17.1,17.2,17.2,17.2,17.3,17.3,17.4,17.4,17.5,17.6,17.6,17.7,17.7,17.8,17.9,17.9,18.0,18.0,18.1,18.1,18.2,18.3,18.4,18.4,18.5,18.6,18.7,18.7,18.8,18.8,18.9,19.0,19.1,19.1,19.2,19.3,19.3,19.4,19.5,19.6,19.7,19.7,19.8,19.8,19.9,20.0,20.1,20.1,20.2,20.3,20.4,20.5,20.6,20.6,20.7,20.8,20.9,21.0,21.1,21.2,21.3,21.4,21.6,21.6,21.9,22.1,22.4,22.5,22.7,23.1,23.3,23.4,23.7,23.9,24.2,24.5,24.9,25.6,26.3,27.0];
+let JDL=JDLM;
+const TGR=15,TI=20;   // Heizgrenze 15 °C, Raum 20 °C (wie Heizgradtage G20/15)
+function year(){
+  const s=$("ysrc").value,mode=$("mode").value,HL=val("hl"),tn=val("tn"),tbS=val("tb"),vlmax=+$("sys").value,eta=SRC[s].eta,ph=SRC[s].ph;
+  const tb=mode==="mono"?tn:Math.max(tn,tbS);
+  const need=T=>T<TGR?HL*(TI-T)/(TI-tn):0;            // Heizleistung linear mit der Außentemperatur
+  const vl=T=>Math.min(vlmax,28+(vlmax-28)*(TGR-T)/(TGR-tn));   // Heizkurve: 28 °C an der Heizgrenze
+  const Qd=need(tb);                                    // Auslegung der WP am Bivalenzpunkt
+  const qmax=T=>s==="L"?Qd*Math.max(.3,1+0.037*(T-tb)):Qd;   // Luft: Datenblatt WP 1, ca. 3,7 % mehr Leistung je K
+  let Qwp=0,Qz=0,Wv=0,Wh=0;const days=[];
+  JDL.forEach(T=>{const q=need(T);let wp=0;
+    if(q>0){if(mode==="alt"&&T<tb)wp=0;else wp=Math.min(q,qmax(T))}
+    const e=eta*epsC(vl(T),s==="L"?T:0);
+    Qwp+=wp*24;Qz+=(q-wp)*24;Wv+=wp/e*24;Wh+=wp/Qd*ph*24;days.push({T,q,wp,lim:q>0?qmax(T):null,e})});
+  const Wz=mode==="me"?Qz:0;
+  return{s,mode,HL,tn,tb,vlmax,Qd,Qwp,Qz,Wv,Wh,Wz,jaz:Qwp/(Wv+Wh),days,ant:Qwp/(Qwp+Qz),eta,need};
+}
+const ZUS={mono:"(keine)",alt:"Kessel (Gas, Öl, Holz)",par:"Kessel (Gas, Öl, Holz)",me:"Elektro-Heizstab"};
+function yearDraw(y){
+  const W=520,H=300,l=46,rt=14,tp=16,b=40,X=d=>l+d/365*(W-l-rt);
+  // Jahresdauerlinie
+  let Yt=v=>tp+(30-v)/(45)*(H-tp-b),g="";
+  for(let v=-15;v<=30;v+=5)g+=`<line x1="${l}" x2="${W-rt}" y1="${Yt(v)}" y2="${Yt(v)}" stroke="var(--line)"/><text x="${l-8}" y="${Yt(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  for(let d=0;d<=350;d+=50)g+=`<text x="${X(d)}" y="${H-b+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${d}</text>`;
+  g+=`<text x="${(l+W)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">Anzahl Tage (kälteste zuerst)</text><text x="6" y="${tp-4}" font-size="11" fill="var(--muted)">°C</text>`;
+  const hz=JDL.filter(v=>v<TGR).length;
+  g+=`<rect x="${l}" y="${Yt(TGR)}" width="${X(hz)-l}" height="${Yt(-15)-Yt(TGR)}" fill="var(--warm)" opacity=".06"/>`;
+  const hline=(v,c,t,dash)=>g+=`<line x1="${l}" x2="${W-rt}" y1="${Yt(v)}" y2="${Yt(v)}" stroke="${c}" stroke-width="1.5" ${dash?'stroke-dasharray="5 4"':""}/><text x="${W-rt-4}" y="${Yt(v)-5}" text-anchor="end" font-size="11" fill="${c}">${t}</text>`;
+  hline(TGR,"var(--warm)",`Heizgrenze ${TGR} °C · ${hz} Heiztage`,1);hline(y.tn,"var(--bad)",`Normaußentemperatur ${fmt(y.tn,0)} °C`,1);
+  if(y.mode!=="mono")hline(y.tb,"var(--accent)",`Bivalenzpunkt ${fmt(y.tb,0)} °C · ${JDL.filter(v=>v<y.tb).length} Tage darunter`,0);
+  g+=`<polyline points="${JDL.map((v,i)=>`${X(i).toFixed(1)},${Yt(v).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--ink)" stroke-width="2.5"/>`;
+  $("jdl").innerHTML=g;
+  // Heizleistung über die Tage
+  const top=Math.ceil(y.HL/2)*2,Yq=v=>tp+(top-v)/top*(H-tp-b);g="";
+  for(let v=0;v<=top;v+=2)g+=`<line x1="${l}" x2="${W-rt}" y1="${Yq(v)}" y2="${Yq(v)}" stroke="var(--line)"/><text x="${l-8}" y="${Yq(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  for(let d=0;d<=350;d+=50)g+=`<text x="${X(d)}" y="${H-b+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${d}</text>`;
+  g+=`<text x="${(l+W)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">Anzahl Tage (kälteste zuerst)</text><text x="6" y="${tp-4}" font-size="11" fill="var(--muted)">kW</text>`;
+  const D=y.days,pt=(i,v)=>`${X(i).toFixed(1)},${Yq(v).toFixed(1)}`;
+  g+=`<polygon points="${pt(0,0)} ${D.map((d,i)=>pt(i,d.q)).join(" ")} ${pt(364,0)}" fill="var(--warm)" opacity=".75"/>`;
+  g+=`<polygon points="${pt(0,0)} ${D.map((d,i)=>pt(i,d.wp)).join(" ")} ${pt(364,0)}" fill="var(--accent)" opacity=".75"/>`;
+  const lim=D.map((d,i)=>d.lim!=null&&!(y.mode==="alt"&&d.T<y.tb)?pt(i,Math.min(top,d.lim)):null).filter(Boolean);
+  if(lim.length)g+=`<polyline points="${lim.join(" ")}" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  g+=`<text x="${X(120)}" y="${Yq(top*.9)}" font-size="12" fill="var(--ink)">Dimensionierung: ${fmt(y.Qd,1)} kW bei ${fmt(y.tb,0)} °C</text>`;
+  $("hl-svg").innerHTML=g;$("lg-zus").textContent=`Zusatzheizung: ${ZUS[y.mode]}`;
+}
+function yearUpdate(){
+  const yr=$("yr").value;JDL=yr==="m"?JDLM:JDLY[yr];
+  const y=year();
+  $("o-hl").textContent=`${fmt(y.HL,1)} kW`;$("o-tn").textContent=`${fmt(y.tn,0)} °C`;$("o-tb").textContent=y.mode==="mono"?"(monovalent: = Normaußentemp.)":`${fmt(y.tb,0)} °C`;$("tb").disabled=y.mode==="mono";
+  $("y-ant").textContent=fmt(y.ant*100,0);$("y-q").textContent=`${fmt(y.Qwp+y.Qz,0)} kWh Heizwärme`;
+  $("y-jaz").textContent=fmt(y.jaz,2);const jp=$("y-jazp");jp.className="pill "+(y.jaz>=3?"ok":"bad");jp.textContent=y.jaz>=3?"über 3: sinnvoll":"unter 3: ineffizient";
+  $("y-el").textContent=fmt(y.Wv+y.Wh+y.Wz,0);$("y-elp").textContent=y.mode==="me"?`davon Heizstab ${fmt(y.Wz,0)} kWh`:y.Qz>0?`dazu ${fmt(y.Qz,0)} kWh Wärme aus dem Kessel`:"nur Wärmepumpe";
+  let h=`<p class="hd">Jahresbilanz der Wärmepumpe</p>`;
+  h+=M(`\\mathrm{JAZ} = \\beta = \\frac{Q_{WP}}{W_{el,V+Hilf}} = \\frac{${n_(y.Qwp,0)}\\,\\mathrm{kWh}}{${n_(y.Wv,0)} + ${n_(y.Wh,0)}\\,\\mathrm{kWh}} = \\mathbf{${n_(y.jaz,2)}}`,`Feldtest Fraunhofer: ${y.s==="L"?"Luft-Wasser 2,6 bis 3,0":"Sole-Wasser 3,3 bis 3,8"}`);
+  if(y.mode==="me")h+=M(`\\frac{Q_{WP} + Q_{Stab}}{W_{el,V+Hilf} + W_{Stab}} = \\frac{${n_(y.Qwp+y.Qz,0)}}{${n_(y.Wv+y.Wh+y.Wz,0)}} = ${n_((y.Qwp+y.Qz)/(y.Wv+y.Wh+y.Wz),2)}`,"mit Heizstab (1 kWh Strom = 1 kWh Wärme)");
+  h+=`<p class="c" style="margin:8px 0 0;line-height:1.5">Modellannahmen: Heizleistung linear von \\(\\dot Q_{HL}\\) bei der Normaußentemperatur bis 0 an der Heizgrenze (\\(20/15\\,^\\circ\\mathrm{C}\\) wie bei den Heizgradtagen); Heizkurve von \\(28\\,^\\circ\\mathrm{C}\\) bis \\(${y.vlmax}\\,^\\circ\\mathrm{C}\\); \\(\\varepsilon = ${n_(y.eta,2)}\\cdot\\varepsilon_C\\); Leistung der Luft-WP sinkt um etwa 3,7 % je Kelvin (Datenblatt WP 1); Hilfsantriebe ${fmt(SRC[y.s].ph,2)} kW bei Volllast. Nicht enthalten: Warmwasser, Abtauen, Takten, Speicherverluste. Echte Anlagen liegen daher meist unter dem Modell. Die Normaußentemperatur ist hier frei wählbar; den gültigen Wert für Luxemburg im Unterricht festlegen.</p>`;
+  $("ycalc").innerHTML=h;typeset($("ycalc"));yearDraw(y);
+}
+$("yr").innerHTML+=Object.keys(JDLY).map(k=>`<option value="${k}">${k} (kältester Tag ${fmt(JDLY[k][0],1)} °C)</option>`).join("");
+["yr","ysrc","mode","sys"].forEach(id=>$(id).onchange=yearUpdate);["hl","tn","tb"].forEach(id=>$(id).oninput=yearUpdate);
+
+/* ---------- Quiz ---------- */
+let qSeed=Math.floor(Math.random()*1e6);
+function quiz(){
+  const r=mulberry32(qSeed),pk=a=>a[Math.floor(r()*a.length)];
+  const t2=pk([[5.94,1.32],[7.86,1.69],[10.06,2.13],[13.14,2.79],[17.17,3.65]]),e2=t2[0]/t2[1];
+  const tw=pk([35,45,55]),tk=pk([-5,0,2,7,10]),ec=epsC(tw,tk);
+  const a1=pk([[-7,3],[2,3.8],[7,4.5],[10,4.9]]),ec1=epsC(35,a1[0]),gg=a1[1]/ec1;
+  const Q=pk([6,8,10]),Pv=pk([1.6,2,2.4]),Ph=pk([0.08,0.12,0.15]),cop=Q/(Pv+Ph);
+  const QJ=pk([12000,15000,18000]),WJ=pk([3800,4500,5200]),jaz=QJ/WJ;
+  const Qs=pk([6,8,10]),es=pk([4,4.5,5]),qs=pk([40,50,60]),QU=Qs-Qs/es,L=QU*1000/qs;
+  const T=[
+    {kind:"num",q:`Datenblatt WP 2: Nenn-Wärmeleistung \\(${n_(t2[0],2)}\\,\\mathrm{kW}\\), elektrische Leistungsaufnahme \\(${n_(t2[1],2)}\\,\\mathrm{kW}\\) (B0/W35). Berechne die Leistungsziffer \\(\\varepsilon\\).`,ans:e2,unit:"",atol:.03,sol:`\\(\\varepsilon = \\frac{${n_(t2[0],2)}}{${n_(t2[1],2)}} = ${n_(e2,2)}\\)`},
+    {kind:"num",q:`Vorlauf \\(${tw}\\,^\\circ\\mathrm{C}\\), Wärmequelle \\(${tk}\\,^\\circ\\mathrm{C}\\). Wie groß ist die Carnot-Leistungszahl \\(\\varepsilon_C\\)?`,ans:ec,unit:"",tol:.02,sol:`\\(\\varepsilon_C = \\frac{${tw} + 273{,}15}{${tw} - ${sg(tk)}} = \\frac{${n_(tw+K0,2)}}{${tw-tk}} = ${n_(ec,2)}\\)`},
+    {kind:"num",q:`WP 1 erreicht bei A${a1[0]}/W35 die Leistungsziffer \\(\\varepsilon = ${n_(a1[1],1)}\\). Berechne den Gütegrad \\(\\eta\\).`,ans:gg,unit:"",atol:.015,sol:`\\(\\varepsilon_C = \\frac{308{,}15}{35 - ${sg(a1[0])}} = ${n_(ec1,2)}\\), \\(\\eta = \\frac{${n_(a1[1],1)}}{${n_(ec1,2)}} = ${n_(gg,2)}\\)`},
+    {kind:"num",q:`Eine Luft-Wasser-WP gibt \\(${Q}\\,\\mathrm{kW}\\) ab. Der Verdichter nimmt \\(${n_(Pv,1)}\\,\\mathrm{kW}\\) auf, der Ventilator \\(${n_(Ph,2)}\\,\\mathrm{kW}\\). Berechne den COP.`,ans:cop,unit:"",atol:.03,sol:`\\(\\mathrm{COP} = \\frac{${Q}}{${n_(Pv,1)} + ${n_(Ph,2)}} = ${n_(cop,2)}\\) (ohne Ventilator wäre \\(\\varepsilon = ${n_(Q/Pv,2)}\\))`},
+    {kind:"num",q:`Ein Stromzähler für die Wärmepumpe zeigt im Jahr \\(${n_(WJ,0)}\\,\\mathrm{kWh}\\), der Wärmemengenzähler \\(${n_(QJ,0)}\\,\\mathrm{kWh}\\). Berechne die Jahresarbeitszahl \\(\\beta\\).`,ans:jaz,unit:"",atol:.03,sol:`\\(\\beta = \\frac{${n_(QJ,0)}}{${n_(WJ,0)}} = ${n_(jaz,2)}\\)${jaz>=3?" – primärenergetisch sinnvoll":" – unter 3, primärenergetisch nicht sinnvoll"}`},
+    {kind:"num",q:`Eine Sole-WP soll \\(${Qs}\\,\\mathrm{kW}\\) liefern, \\(\\varepsilon = ${n_(es,1)}\\). Der Boden hat eine spezifische Wärmeentzugsleistung von \\(${qs}\\,\\mathrm{W/m}\\). Wie lang muss die Erdsonde sein?`,ans:L,unit:"\\(\\mathrm{m}\\)",tol:.03,sol:`\\(P_{el,V} = \\frac{${Qs}}{${n_(es,1)}} = ${n_(Qs/es,2)}\\,\\mathrm{kW}\\), \\(\\dot Q_U = ${Qs} - ${n_(Qs/es,2)} = ${n_(QU,2)}\\,\\mathrm{kW}\\), \\(L = \\frac{${n_(QU*1000,0)}\\,\\mathrm{W}}{${qs}\\,\\mathrm{W/m}} = ${n_(L,0)}\\,\\mathrm{m}\\)`},
+    {kind:"sel",q:"Was passiert im Verdampfer?",opts:["Das Kältemittel nimmt Umweltwärme auf und wird gasförmig","Das Kältemittel gibt Wärme an die Heizung ab","Der Druck des Kältemittels steigt stark an"],ans:0,sol:"Der Siedepunkt des Kältemittels liegt unter der Temperatur der Quelle: Es verdampft und entzieht der Umwelt dabei Wärme."},
+    {kind:"sel",q:"Warum ist der COP kleiner als die Leistungsziffer ε?",opts:["Er berücksichtigt auch Hilfsantriebe wie Ventilator oder Solepumpe","Er wird über ein ganzes Jahr gemessen","Er rechnet mit Celsius statt Kelvin"],ans:0,sol:"COP: \\(\\dot Q_{WP}/P_{el,V+Hilf}\\). Die Jahresbetrachtung ist die JAZ."},
+    {kind:"sel",q:"Welche Maßnahme verbessert die Leistungsziffer am meisten?",opts:["Niedrigere Vorlauftemperatur, z. B. Fußbodenheizung","Größerer Verdichter","Höhere Raumtemperatur"],ans:0,sol:"Der Temperaturhub \\(T_{warm} - T_{kalt}\\) steht im Nenner von \\(\\varepsilon_C\\): je kleiner, desto besser."},
+    {kind:"sel",q:"Was bedeutet bivalent-alternativ?",opts:["Unter dem Bivalenzpunkt schaltet die WP ab, ein Kessel heizt allein","WP und Kessel laufen unter dem Bivalenzpunkt gemeinsam","Ein Heizstab deckt die Spitzenlast"],ans:0,sol:"Alternativ: nur einer der beiden Erzeuger läuft. Parallel: beide gleichzeitig. Heizstab: monoenergetisch."}
+  ];
+  const ids=T.map((_,i)=>"q"+i);$("quiz").innerHTML=T.map((t,i)=>taskHTML(t,ids[i],`${i+1}.`)).join("");
+  const nn=T.length,sc=k=>$("qscore").textContent=`${k} von ${nn} richtig`;sc(0);bindTasks($("quiz"),T,ids,sc);typeset($("quiz"));
+}
+$("qnew").onclick=()=>{qSeed=Math.floor(Math.random()*1e6);quiz()};
+
+/* ---------- Fotos ---------- */
+$("echt").innerHTML=bilderHTML([
+  ["wp-aussen","Außeneinheit einer Luft-Wasser-Wärmepumpe: Der große Ventilator saugt Außenluft durch den Verdampfer hinten im Gerät."],
+  ["wp-innen","Blick in eine Außeneinheit: unten der graue Verdichter (Kompressor), darüber Kupferleitungen des Kältemittelkreises."],
+  ["wp-schnee","Vereister Verdampfer im Winter: Die Luft kühlt unter den Taupunkt, ihr Wasser gefriert an den Lamellen. Die WP muss regelmäßig abtauen und braucht dafür Energie."],
+  ["sole-wp","Sole-Wasser-Wärmepumpe im Keller: Verdichter, Verdampfer und Verflüssiger stecken im Gehäuse, links die gedämmten Soleleitungen."],
+  ["erdkollektor","Erdkollektor: Die Rohre werden in 0,8 bis 1,2 m Tiefe flächig verlegt. Die Fläche entspricht etwa der beheizten Wohnfläche."],
+  ["erdsonde","Bohrung für eine Erdsonde: Die Sonde reicht 25 bis 200 m tief und braucht wenig Fläche, über 100 m ist eine Genehmigung nötig."]]);
+
+update();yearUpdate();quiz();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
