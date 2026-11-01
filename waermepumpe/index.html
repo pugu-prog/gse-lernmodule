@@ -55,14 +55,14 @@
   </section>
 
   <section class="simbox" id="quellen">
-    <h2>Die Wärmequellen im Detail</h2>
+    <h2>Die Wärmepumpen-Arten und ihre Wärmequellen</h2>
     <p class="c" style="margin:0;max-width:80ch">Wie warm ist die Quelle im Laufe des Jahres in Ettelbruck? Je wärmer sie im Winter ist, desto kleiner ist der Temperaturhub und desto besser arbeitet die Wärmepumpe genau dann, wenn am meisten geheizt wird.</p>
     <div class="grid even">
       <div><svg id="jahr" viewBox="0 0 520 300" width="100%" role="img" aria-label="Temperatur der Wärmequellen im Jahreslauf"></svg>
         <div class="legend"><span><i class="lg" style="border-top:2.5px solid #d97706"></i>Außenluft (Monatsmittel)</span><span><i class="lg" style="border-top:2.5px solid #65a30d"></i>Erdreich in <span id="lg-z"></span> (Erdkollektor)</span><span><i class="lg" style="border-top:2.5px solid #7c3aed"></i>Erdreich 50 m (Erdsonde)</span><span><i class="lg" style="border-top:2.5px dashed #0891b2"></i>Grundwasser</span></div></div>
       <div class="tbl"><table id="jan"></table><p class="c" style="margin:8px 0 0">Leistungsziffer im kältesten und im wärmsten Monat bei Vorlauf 35 °C mit den Gütegraden von oben. Achtung: Im Betrieb ist die Sole einige Kelvin kälter als das ungestörte Erdreich, und das Erdreich um Kollektor und Sonde kühlt im Winter zusätzlich aus.</p></div>
     </div>
-    <div class="row" style="margin-top:4px"><div class="seg" role="group" aria-label="Wärmequelle wählen"><button data-q="luft" aria-pressed="true">Außenluft</button><button data-q="koll" aria-pressed="false">Erdkollektor</button><button data-q="sonde" aria-pressed="false">Erdsonde</button><button data-q="wasser" aria-pressed="false">Grundwasser</button></div></div>
+    <div class="row" style="margin-top:4px"><div class="seg" role="group" aria-label="Wärmepumpen-Art wählen"><button data-v="LW" aria-pressed="true">Luft-Wasser</button><button data-v="SW" aria-pressed="false">Sole-Wasser</button><button data-v="WW" aria-pressed="false">Wasser-Wasser</button><button data-v="LL" aria-pressed="false">Luft-Luft</button></div><span class="c">Das erste Wort nennt die Wärmequelle, das zweite den Wärmeträger im Haus (Skript).</span></div>
     <div class="grid">
       <div><svg id="qsvg" viewBox="0 0 560 380" width="100%" role="img" aria-label="Schema der gewählten Wärmequelle"></svg></div>
       <div style="display:grid;gap:12px;align-content:start"><div class="ctrls" id="qctrl"></div><div id="qinfo" class="expl" style="grid-template-columns:1fr"></div></div>
@@ -228,7 +228,7 @@ function update(){
 }
 ["tk","tw","q","eta","ph"].forEach(id=>$(id).oninput=update);
 $("play").onclick=()=>{run=!run;$("play").textContent=run?"Pause":"Abspielen"};if(!run)$("play").textContent="Abspielen";
-function loop(ts){const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;if(run)T+=dt;draw(update.r,T);if(QS==="luft"||QS==="wasser")qUpd();requestAnimationFrame(loop)}
+function loop(ts){const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;if(run)T+=dt;draw(update.r,T);if(QS==="luft"||QS==="wasser"||QS==="ll")qUpd();requestAnimationFrame(loop)}
 
 /* ---------- Wärmequellen im Detail ---------- */
 /* Ettelbruck, ERA5 2015–2024: Monatsmittel der Luft; Jahresmittel 10,85 °C, Amplitude 8,33 K, wärmster Tag ≈ 203 (Anpassung der Jahreswelle) */
@@ -239,7 +239,7 @@ const tiefe=z=>TM+Math.max(0,z-15)/30;                                          
 const GW=10;
 const BOEDEN=[["Kies, Sand, trocken",20,25],["Kies, Sand, wasserführend",55,80],["Ton, Lehm, feucht",30,50],["Kalkstein",45,70],["Sandstein",55,80],["Gneis, Granit",55,85]];
 const WP1T={35:[[-7,5.4,3],[2,8.2,3.8],[7,10,4.5],[10,10.5,4.9]],55:[[-7,5.35,1.72],[2,7.6,2.55],[7,9.2,2.8],[10,9.8,3.18]]};
-let QS="luft";const QV={luft:{w:"35",p:"1",dt:5},koll:{a:140,z:1.2},sonde:{b:2,q:8,e:4.7},wasser:{q:8,t:10,dt:3,ph:0.25}};
+let QS="luft",VS="LW",SOLE="sonde";const QV={ll:{v:150,tz:40,ta:2,hl:2.5},luft:{w:"35",p:"1",dt:5},koll:{a:140,z:1.2},sonde:{b:2,q:8,e:4.7},wasser:{q:8,t:10,dt:3,ph:0.25}};
 const sl=(id,lab,min,max,st,v)=>`<label>${lab} <output id="o-${id}"></output><input type="range" id="${id}" min="${min}" max="${max}" step="${st}" value="${v}"></label>`;
 function qJahr(){
   const W=520,H=300,l=40,rt=14,tp=14,b=34,X=m=>l+(m+0.5)/12*(W-l-rt),Y=v=>tp+(22-v)/24*(H-tp-b),z=QV.koll.z;
@@ -253,19 +253,26 @@ function qJahr(){
   $("jan").innerHTML=`<tr><th>Quelle</th><th class="r">Januar</th><th class="r">\\(\\varepsilon\\)</th><th class="r">Juli</th><th class="r">\\(\\varepsilon\\)</th></tr>`+rows.map(([n,f,e])=>`<tr><td>${n}</td>${[0,6].map(i=>`<td class="r num">${fmt(f(i),1)} °C</td><td class="r num">${fmt(e*epsC(35,f(i)),1)}</td>`).join("")}</tr>`).join("");
   typeset($("jan"));
 }
+const VAR={LW:{n:"Luft-Wasser-Wärmepumpe",q:"Außenluft",t:"Heizungswasser",src:"L",x:"Häufigste Art im Gebäudebestand: günstig, keine Bohrung, keine Genehmigung. Das Außengerät kann im Freien stehen, oder die Luft wird über gedämmte Kanäle zur WP im Haus geführt. Geringere JAZ als Sole- und Wasser-WP; meist bivalent oder monoenergetisch betrieben."},
+  SW:{n:"Sole-Wasser-Wärmepumpe",q:"Erdreich (Sole: Wasser mit Frostschutzmittel)",t:"Heizungswasser",src:"S",x:"Die Sole zirkuliert unterirdisch und nimmt Erdwärme auf; über einen Wärmeübertrager geht sie ans Kältemittel. Gleichmäßiges Wärmeangebot, aber teuer. Meist monovalent betrieben. Die Erdwärme holt man mit einem Erdkollektor oder einer Erdsonde:"},
+  WW:{n:"Wasser-Wasser-Wärmepumpe",q:"Grundwasser",t:"Heizungswasser",src:"W",x:"Die Außentemperatur hat kaum Einfluss auf die Quelle: hohe Leistungsziffer und konstante Heizleistung. Eher geringer Marktanteil."},
+  LL:{n:"Luft-Luft-Wärmepumpe",q:"Luft",t:"Luft",src:"L",x:"Hier ist Luft auch der Wärmeträger: Die Gebäudeheizung ist in die Lüftungsanlage integriert (Skript)."}};
 function qCtrl(){
-  const v=QV[QS];let h="",info="";
-  if(QS==="luft"){h=`<label>Heizsystem<select id="qw"><option value="35">Fußbodenheizung W35</option><option value="55">Heizkörper W55</option></select></label><label>Betriebspunkt<select id="qp">${WP1T[35].map((r,i)=>`<option value="${i}">A${r[0]} (Luft ${r[0]} °C)</option>`).join("")}</select></label>`+sl("qdt","Abkühlung der Luft \\(\\Delta\\vartheta_L\\)",3,8,0.5,v.dt);
-    info=`<div><h3>Außenluft</h3><p>Überall verfügbar und ohne Genehmigung, aber genau dann am kältesten, wenn am meisten Wärme gebraucht wird. Die Werte unten stammen aus dem Datenblatt WP 1 im Skript: Bei Kälte sinken Heizleistung und Leistungsziffer gleichzeitig. Weil Luft wenig Wärme speichert, muss der Ventilator sehr viel Luft bewegen: Das macht Geräusche, und unter dem Taupunkt vereist der Verdampfer.</p></div>`}
-  if(QS==="koll"){h=sl("qa","beheizte Wohnfläche",60,250,10,v.a)+sl("qz","Verlegetiefe \\(z\\)",0.5,2.5,0.1,v.z);
-    info=`<div><h3>Erdkollektor</h3><p>Rohre liegen flächig 80 bis 120 cm tief im Garten. Überschlägig ist die Kollektorfläche so groß wie die beheizte Wohnfläche (Skript). In dieser Tiefe kommt die Sommerwärme gedämpft und verspätet an: Das Erdreich ist im Winter wärmer als die Luft. Nach dem Verlegen darf die Fläche nicht überbaut oder versiegelt werden, denn Sonne und Regen laden den Boden wieder auf.</p></div>`}
-  if(QS==="sonde"){h=`<label>Boden<select id="qb">${BOEDEN.map((b,i)=>`<option value="${i}">${b[0]} (${b[1]} bis ${b[2]} W/m)</option>`).join("")}</select></label>`+sl("qq","Heizleistung \\(\\dot Q_{WP}\\)",4,16,0.5,v.q)+sl("qe","Leistungsziffer \\(\\varepsilon\\)",3.5,5.5,0.1,v.e);
-    info=`<div><h3>Erdsonde</h3><p>Senkrechte Bohrung, meist 25 bis 200 m tief, mit einem U-Rohr, in dem Sole fließt. Braucht wenig Fläche, die Bohrung ist aber teuer, und über 100 m Tiefe ist eine bergrechtliche Genehmigung nötig. Deshalb setzt man oft mehrere Sonden bis 100 m. Ab etwa 15 m ist das Erdreich das ganze Jahr gleich warm, und es wird mit der Tiefe wärmer (ca. 1 K je 30 m).</p></div>`}
-  if(QS==="wasser"){h=sl("qq","Heizleistung \\(\\dot Q_{WP}\\)",4,16,0.5,v.q)+sl("qt","Grundwassertemperatur",8,12,0.5,v.t)+sl("qdt","Abkühlung des Wassers \\(\\Delta\\vartheta_W\\)",2,6,0.5,v.dt)+sl("qph","Brunnenpumpe \\(P_{Hilf}\\)",0.1,0.6,0.05,v.ph);
-    info=`<div><h3>Grundwasser</h3><p>Energetisch die beste Quelle: fast das ganze Jahr gleich warm, daher hohe Leistungsziffer und konstante Heizleistung. Man braucht einen Förder- und einen Schluckbrunnen (4 bis 50 m tief), eine wasserrechtliche Genehmigung und eine Wasseranalyse. Die Brunnenpumpe braucht zusätzlich Strom und senkt den COP.</p></div>`}
+  const v=QV[QS],V=VAR[VS];let h="",info=`<div><h3>${V.n}</h3><p>Wärmequelle: <b>${V.q}</b> → Kältemittel → Wärmeträger: <b>${V.t}</b>. ${V.x}</p></div>`;
+  if(VS==="SW")h=`<label>Quelle der Sole<select id="qart"><option value="sonde">Erdsonde (senkrecht, 25–200 m)</option><option value="koll">Erdkollektor (flach, 0,8–1,2 m)</option></select></label>`;
+  if(QS==="luft"){h+=`<label>Heizsystem<select id="qw"><option value="35">Fußbodenheizung W35</option><option value="55">Heizkörper W55</option></select></label><label>Betriebspunkt<select id="qp">${WP1T[35].map((r,i)=>`<option value="${i}">A${r[0]} (Luft ${r[0]} °C)</option>`).join("")}</select></label>`+sl("qdt","Abkühlung der Luft \\(\\Delta\\vartheta_L\\)",3,8,0.5,v.dt);
+    info+=`<div><h3>Außenluft</h3><p>Überall verfügbar und ohne Genehmigung, aber genau dann am kältesten, wenn am meisten Wärme gebraucht wird. Die Werte unten stammen aus dem Datenblatt WP 1 im Skript: Bei Kälte sinken Heizleistung und Leistungsziffer gleichzeitig. Weil Luft wenig Wärme speichert, muss der Ventilator sehr viel Luft bewegen: Das macht Geräusche, und unter dem Taupunkt vereist der Verdampfer.</p></div>`}
+  if(QS==="koll"){h+=sl("qa","beheizte Wohnfläche",60,250,10,v.a)+sl("qz","Verlegetiefe \\(z\\)",0.5,2.5,0.1,v.z);
+    info+=`<div><h3>Erdkollektor</h3><p>Rohre liegen flächig 80 bis 120 cm tief im Garten. Überschlägig ist die Kollektorfläche so groß wie die beheizte Wohnfläche (Skript). In dieser Tiefe kommt die Sommerwärme gedämpft und verspätet an: Das Erdreich ist im Winter wärmer als die Luft. Nach dem Verlegen darf die Fläche nicht überbaut oder versiegelt werden, denn Sonne und Regen laden den Boden wieder auf.</p></div>`}
+  if(QS==="sonde"){h+=`<label>Boden<select id="qb">${BOEDEN.map((b,i)=>`<option value="${i}">${b[0]} (${b[1]} bis ${b[2]} W/m)</option>`).join("")}</select></label>`+sl("qq","Heizleistung \\(\\dot Q_{WP}\\)",4,16,0.5,v.q)+sl("qe","Leistungsziffer \\(\\varepsilon\\)",3.5,5.5,0.1,v.e);
+    info+=`<div><h3>Erdsonde</h3><p>Senkrechte Bohrung, meist 25 bis 200 m tief, mit einem U-Rohr, in dem Sole fließt. Braucht wenig Fläche, die Bohrung ist aber teuer, und über 100 m Tiefe ist eine bergrechtliche Genehmigung nötig. Deshalb setzt man oft mehrere Sonden bis 100 m. Ab etwa 15 m ist das Erdreich das ganze Jahr gleich warm, und es wird mit der Tiefe wärmer (ca. 1 K je 30 m).</p></div>`}
+  if(QS==="wasser"){h+=sl("qq","Heizleistung \\(\\dot Q_{WP}\\)",4,16,0.5,v.q)+sl("qt","Grundwassertemperatur",8,12,0.5,v.t)+sl("qdt","Abkühlung des Wassers \\(\\Delta\\vartheta_W\\)",2,6,0.5,v.dt)+sl("qph","Brunnenpumpe \\(P_{Hilf}\\)",0.1,0.6,0.05,v.ph);
+    info+=`<div><h3>Grundwasser</h3><p>Energetisch die beste Quelle: fast das ganze Jahr gleich warm, daher hohe Leistungsziffer und konstante Heizleistung. Man braucht einen Förder- und einen Schluckbrunnen (4 bis 50 m tief), eine wasserrechtliche Genehmigung und eine Wasseranalyse. Die Brunnenpumpe braucht zusätzlich Strom und senkt den COP.</p></div>`}
+  if(QS==="ll"){h=sl("qv","Luftvolumenstrom \\(\\dot V\\)",80,300,10,v.v)+sl("qtz","Zulufttemperatur \\(\\vartheta_{zu}\\)",30,50,1,v.tz)+sl("qta","Außenluft \\(\\vartheta_{Au}\\)",-10,15,1,v.ta)+sl("qhl","Heizlast des Hauses",1,10,0.5,v.hl);
+    info+=`<div><h3>Warum Luft als Wärmeträger nicht viel schafft</h3><p>Ein Kubikmeter Luft transportiert je Kelvin nur \\(0{,}34\\,\\mathrm{Wh}\\) (Formelsammlung Kapitel 1), Wasser mit \\(1{,}163\\,\\mathrm{kWh}\\) rund 3400-mal mehr. Der Volumenstrom der Lüftung ist durch den hygienischen Luftwechsel vorgegeben, und zu heiße Zuluft ist unangenehm. Die Rechnung zeigt, für welche Heizlast das reicht.</p></div>`}
   $("qctrl").innerHTML=h;$("qinfo").innerHTML=info;
   if(QS==="luft"){$("qw").value=v.w;$("qp").value=v.p}if(QS==="sonde")$("qb").value=v.b;
-  $("qctrl").querySelectorAll("input,select").forEach(e=>e.oninput=e.onchange=qUpd);typeset([$("qctrl"),$("qinfo")]);qUpd();
+  $("qctrl").querySelectorAll("input,select").forEach(e=>e.oninput=e.onchange=qUpd);if(VS==="SW"){const a=$("qart");a.value=SOLE;a.oninput=null;a.onchange=()=>{SOLE=QS=a.value;qCtrl()}}typeset([$("qctrl"),$("qinfo")]);qUpd();
 }
 const tile=(lab,val,unit,pill="",cls="")=>`<div class="result"><span class="lab">${lab}</span><span class="val ${cls}">${val}</span><span class="unit">${unit}</span>${pill}</div>`;
 function qUpd(){
@@ -319,10 +326,28 @@ function qUpd(){
     h=M(`\\varepsilon = \\eta\\cdot\\frac{T_{warm}}{T_{warm}-T_{kalt}} = ${n_(SRC.W.eta,2)}\\cdot\\frac{308{,}15}{35 - ${n_(v.t,1)}} = ${n_(e,2)},\\quad \\dot Q_U = ${n_(v.q,1)} - \\frac{${n_(v.q,1)}}{${n_(e,2)}} = ${n_(U,2)}\\,\\mathrm{kW}`);
     h+=M(`\\dot V_W = \\frac{\\dot Q_U}{\\rho\\cdot c\\cdot\\Delta\\vartheta_W} = \\frac{${n_(U,2)}\\,\\mathrm{kW}}{1{,}163\\,\\frac{\\mathrm{kWh}}{\\mathrm{m^3K}}\\cdot${n_(v.dt,1)}\\,\\mathrm{K}} = \\mathbf{${n_(Vw,2)}}\\,\\mathrm{m^3/h}`,"\\(\\rho\\cdot c = 1000\\,\\mathrm{kg/m^3}\\cdot4{,}19\\,\\mathrm{kJ/(kg\\,K)} = 1{,}163\\,\\mathrm{kWh/(m^3K)}\\); Abkühlung und Pumpenleistung: Annahmen");
     h+=M(`\\mathrm{COP} = \\frac{${n_(v.q,1)}}{${n_(P,2)} + ${n_(v.ph,2)}} = \\mathbf{${n_(cop,2)}}`);}
+  if(QS==="ll"){v.v=val("qv");v.tz=val("qtz");v.ta=val("qta");v.hl=val("qhl");$("o-qv").textContent=`${fmt(v.v,0)} m³/h`;$("o-qtz").textContent=`${fmt(v.tz,0)} °C`;$("o-qta").textContent=`${fmt(v.ta,0)} °C`;$("o-qhl").textContent=`${fmt(v.hl,1)} kW`;
+    const Qm=0.34*v.v*(v.tz-20)/1000,e=SRC.L.eta*epsC(v.tz,v.ta),P=Qm/e,Vn=v.hl*1000/(0.34*(v.tz-20)),ok=Qm>=v.hl;
+    g+=`<path d="M150 120 L340 30 L530 120 V350 H150z" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><line x1="0" y1="350" x2="560" y2="350" stroke="var(--ink)" stroke-width="2"/><line x1="150" y1="235" x2="530" y2="235" stroke="var(--line)" stroke-width="2"/>`;
+    g+=`<rect x="175" y="270" width="110" height="64" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text class="lbl" x="230" y="298" text-anchor="middle" font-size="12" fill="var(--ink)">Lüftungsgerät</text><text x="230" y="315" text-anchor="middle" font-size="11" fill="var(--muted)">mit Wärmepumpe</text>`;
+    g+=`<path d="M20 300 H170" fill="none" stroke="#d97706" stroke-width="6" marker-end="url(#ar2)" opacity=".8"/><text x="20" y="290" font-size="12" fill="#d97706">Außenluft ${fmt(v.ta,0)} °C</text>`;
+    g+=`<path d="M200 266 V250 H120 V200 H20" fill="none" stroke="var(--cold)" stroke-width="5" marker-end="url(#ar2)" opacity=".7"/><text x="20" y="192" font-size="12" fill="var(--cold)">Fortluft</text>`;
+    g+=`<path d="M260 266 V160 H480 V190" fill="none" stroke="var(--warm)" stroke-width="7" marker-end="url(#ar2)" opacity=".85"/><path d="M260 160 H330 V190" fill="none" stroke="var(--warm)" stroke-width="7" marker-end="url(#ar2)" opacity=".85"/><text x="370" y="150" text-anchor="middle" font-size="12" fill="var(--warm)">Zuluft ${fmt(v.tz,0)} °C · ${fmt(v.v,0)} m³/h</text>`;
+    g+=`<path d="M470 300 H295" fill="none" stroke="#7c6f64" stroke-width="5" marker-end="url(#ar2)" opacity=".7"/><text x="470" y="290" text-anchor="end" font-size="12" fill="#7c6f64">Abluft 20 °C</text>`;
+    for(let k=0;k<8;k++){const f=((T*.25+k/8)%1);g+=`<circle cx="${260+(f<.4?0:(f-.4)/.6*220)}" cy="${f<.4?266-f/.4*106:160}" r="3.5" fill="var(--warm)"/>`}
+    g+=`<text x="410" y="215" text-anchor="middle" font-size="13" fill="${ok?"var(--ok)":"var(--bad)"}">${ok?"Heizleistung reicht":"Heizleistung reicht nicht"}</text>`;
+    t=tile("max. Heizleistung über die Zuluft",fmt(Qm,2),"\\(\\mathrm{kW}\\)",`<span class="pill ${ok?"ok":"bad"}">Heizlast ${fmt(v.hl,1)} kW</span>`)+tile("Leistungsziffer \\(\\varepsilon\\)",fmt(e,2),"",`<span class="pill neu">\\(P_{el,V} = ${n_(P,2)}\\,\\mathrm{kW}\\)</span>`)+tile("nötiger Luftstrom für die Heizlast",fmt(Vn,0),"\\(\\mathrm{m^3/h}\\)",`<span class="pill ${Vn<=v.v?"ok":"warn"}">${fmt(Vn/v.v,1)}-fach</span>`,"dp");
+    h=M(`\\dot Q_{max} = 0{,}34\\,\\tfrac{\\mathrm{Wh}}{\\mathrm{m^3K}}\\cdot\\dot V\\cdot(\\vartheta_{zu} - \\vartheta_i) = 0{,}34\\cdot${n_(v.v,0)}\\cdot(${n_(v.tz,0)} - 20) = \\mathbf{${n_(Qm*1000,0)}}\\,\\mathrm{W}`,"Formelsammlung Kapitel 1, Raum 20 °C");
+    h+=M(`\\dot V = \\frac{\\dot Q_{HL}}{0{,}34\\cdot(\\vartheta_{zu} - \\vartheta_i)} = \\frac{${n_(v.hl*1000,0)}}{0{,}34\\cdot${n_(v.tz-20,0)}} = ${n_(Vn,0)}\\,\\mathrm{m^3/h}`,"so viel Luft müsste für die ganze Heizlast fließen");
+    h+=M(`\\varepsilon = ${n_(SRC.L.eta,2)}\\cdot\\frac{${n_(v.tz+K0,2)}}{${n_(v.tz,0)} - ${sg(v.ta,0)}} = ${n_(e,2)}`,"Gütegrad wie WP 1; Wärmeträger ist hier die Zuluft");}
   $("qsvg").innerHTML=g;
   if(qUpd.last!==QS+JSON.stringify(v)){qUpd.last=QS+JSON.stringify(v);$("qtiles").innerHTML=t;$("qcalc").innerHTML=h;typeset([$("qtiles"),$("qcalc")]);if(QS==="koll")qJahr()}
 }
-document.querySelectorAll("#quellen .seg button").forEach(b=>b.onclick=()=>{QS=b.dataset.q;document.querySelectorAll("#quellen .seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));qCtrl()});
+function setVar(k,sync=true){VS=k;QS=k==="LW"?"luft":k==="SW"?SOLE:k==="WW"?"wasser":"ll";
+  document.querySelectorAll("#quellen .seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===k));qCtrl();
+  if(sync){const sr=VAR[k].src;if($("src").value!==sr){$("src").value=sr;srcChange()}if(sr!=="W"&&$("ysrc").value!==sr){$("ysrc").value=sr;yearUpdate()}}}
+document.querySelectorAll("#quellen .seg button").forEach(b=>b.onclick=()=>setVar(b.dataset.v));
+const srcChange=$("src").onchange;$("src").onchange=()=>{srcChange();const k={L:"LW",S:"SW",W:"WW"}[$("src").value];if(!(k==="LW"&&VS==="LL")&&k!==VS)setVar(k,false);if($("src").value!=="W"){$("ysrc").value=$("src").value;yearUpdate()}};
 
 /* ---------- Heizjahr ---------- */
 /* Jahresdauerlinie Ettelbruck (49,85° N 6,10° O): Tagesmittel 2015–2024 je Jahr sortiert (JDLY), Mittel über die Jahre (JDLM); ERA5 über Open-Meteo */
